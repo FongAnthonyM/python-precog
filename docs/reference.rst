@@ -6,8 +6,8 @@ Reference
     :backlinks: none
 
 
-templatepackage.__main__
+precog.__main__
 --------------------
 
-.. automodule:: templatepackage.__main__
+.. automodule:: precog.__main__
    :members:
