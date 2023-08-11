@@ -76,6 +76,9 @@ class TestPrECoGModelsFile(ClassTest):
     def test_create_file(self, tmp_path):
         file_path = tmp_path / "test.h5"
         f_obj = self.class_(file=file_path, mode="a", create=True, construct=True)
+        f_obj.print_contents()
+        f_obj["montage"]["bipolar"]
+        f_obj["montage"].components["reference"].reref()
         f_obj.close()
         assert True
 
