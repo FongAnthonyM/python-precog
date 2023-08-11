@@ -1,4 +1,4 @@
-"""baselearner.py
+"""basemodel.py
 
 """
 # Package Header #
@@ -17,19 +17,23 @@ from abc import abstractmethod
 from typing import Any
 
 # Third-Party Packages #
-from baseobjects import BaseObject
+from torch.nn import Module
 
 # Local Packages #
 
 
 # Definitions #
-class BaseLearner(BaseObject):
+class BaseModel(Module):
     # Magic Methods  #
     # Construction/Destruction
     def __init__(self, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.model: None = None
+        self.motifs: BaseMofits | None = None
 
+        # Parent Attributes #
+        super().__init__(init=False)
+
+        # Construct #
         if init:
             self.construct()
 

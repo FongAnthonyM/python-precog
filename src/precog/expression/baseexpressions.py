@@ -1,4 +1,4 @@
-"""baselearner.py
+"""baseexpressions.py
 
 """
 # Package Header #
@@ -23,13 +23,17 @@ from baseobjects import BaseObject
 
 
 # Definitions #
-class BaseLearner(BaseObject):
+class BaseExpressions(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
     def __init__(self, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.model: None = None
+        self.tensor: None = None
 
+        # Parent Attributes #
+        super().__init__(init=False)
+
+        # Construct #
         if init:
             self.construct()
 

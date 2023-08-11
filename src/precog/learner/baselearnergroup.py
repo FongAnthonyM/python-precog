@@ -20,15 +20,16 @@ from typing import Any
 from baseobjects import BaseObject
 
 # Local Packages #
+from .baselearner import BaseLearner
 
 
 # Definitions #
-class BaseLearner(BaseObject):
+class BaseLearnerGroup(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
     def __init__(self, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.model: None = None
+        self.learners: dict[str, BaseLearner] = {}
 
         if init:
             self.construct()
