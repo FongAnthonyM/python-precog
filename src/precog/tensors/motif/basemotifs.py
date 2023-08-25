@@ -1,8 +1,8 @@
-"""baseexpressions.py
+"""basemotifs.py
 
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -23,7 +23,7 @@ from baseobjects import BaseObject
 
 
 # Definitions #
-class BaseExpressions(BaseObject):
+class BaseMotifs(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
     def __init__(self, *, init=True, **kwargs) -> None:
