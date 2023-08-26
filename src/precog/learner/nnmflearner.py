@@ -17,17 +17,26 @@ from abc import abstractmethod
 from typing import Any
 
 # Third-Party Packages #
+from torch import Tensor
 
 # Local Packages #
 from .baselearner import BaseLearner
+from ..tensors import NNMFMotifs
 
 
 # Definitions #
 class NNMFLearner(BaseLearner):
     # Magic Methods  #
     # Construction/Destruction
-    def __init__(self, *, init=True, **kwargs) -> None:
+    def __init__(
+        self,
+        motifs: NNMFMotifs | Tensor | None = None,
+        *,
+        init: bool = True,
+        **kwargs: Any,
+    ) -> None:
         # New Attributes #
+        self.motifs: NNMFMotifs | None = None
 
         # Parent Attributes #
         super().__init__(init=False)
