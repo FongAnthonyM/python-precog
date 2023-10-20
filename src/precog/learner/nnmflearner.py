@@ -37,6 +37,7 @@ class NNMFLearner(BaseLearner):
     ) -> None:
         # New Attributes #
         self.motifs: NNMFMotifs | None = None
+        self.operators: None = None
 
         # Parent Attributes #
         super().__init__(init=False)
@@ -48,5 +49,8 @@ class NNMFLearner(BaseLearner):
     def construct(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def update(self):
+    def construct_operations(self) -> None:
+        pass
+
+    def forward(self, item: Any) -> Any:
         pass
