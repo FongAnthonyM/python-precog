@@ -1,5 +1,5 @@
 """ iorouter.py
-
+An IO object which maps inputs to outputs.
 """
 # Package Header #
 from ...header import *
@@ -27,7 +27,25 @@ from .ioconatiner import IOContainer
 # Definitions #
 # Classes #
 class IORouter(BaseDict, BaseIOMultiplexer):
+    """An IO object which maps inputs to outputs.
 
+    The default functionality is put a single output into multiple inputs.
+
+    Class Attributes:
+        default_get: The default name of the method to use for getting.
+        default_put: The default name of the method to use for putting.
+        default_io: The default IO object type to populate this object when constructed.
+
+    Attributes:
+        get: The method multiplexer which manages which get method to run when called.
+        put: The method multiplexer which manages which get method to run when called.
+
+    Args:
+        io_: The input/outputs to be managed.
+        *args: Arguments for inheritance.
+        init: Determines if this object will construct.
+        **kwargs: Keyword arguments for inheritance.
+    """
     default_get: str | None = "get_all"
     default_put: str | None = "put_all"
     default_io: type[BaseIO] = IOContainer
@@ -59,7 +77,7 @@ class IORouter(BaseDict, BaseIOMultiplexer):
         """Constructs this object.
 
         Args:
-            io_: The input/outputs to be managed
+            io_: The input/outputs to be managed.
             *args: Arguments for inheritance.
             **kwargs: Keyword arguments for inheritance.
         """

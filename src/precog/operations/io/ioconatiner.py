@@ -1,5 +1,5 @@
 """ iocontainer.py
-
+An IO object which stores a single value within it.
 """
 # Package Header #
 from ...header import *
@@ -24,6 +24,12 @@ from .baseio import BaseIO
 # Definitions #
 # Classes #
 class IOContainer(BaseIO):
+    """An IO object which stores a single value within it.
+
+    Args:
+        *args: Arguments for inheritance.
+        **kwargs: Keyword arguments for inheritance.
+    """
     # Magic Methods #
     # Construction/Destruction
     def __init__(self, *args: Any, **kwargs: Any) -> None:

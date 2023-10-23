@@ -1,5 +1,5 @@
-""" iomanager.py
-
+""" baseiomultiplexer.py
+An abstract class for IO Objects which use MethodMultiplexer for the get and put methods.
 """
 # Package Header #
 from ...header import *
@@ -25,7 +25,20 @@ from .baseio import BaseIO
 # Definitions #
 # Classes #
 class BaseIOMultiplexer(BaseIO, CallableMultiplexObject):
+    """An abstract class for IO Objects which use MethodMultiplexer for the get and put methods.
 
+    Class Attributes:
+        default_get: The default name of the method to use for getting.
+        default_put: The default name of the method to use for putting.
+
+    Attributes:
+        get: The method multiplexer which manages which get method to run when called.
+        put: The method multiplexer which manages which get method to run when called.
+
+    Args:
+        *args: Arguments for inheritance.
+        **kwargs: Keyword arguments for inheritance.
+    """
     default_get: str | None = None
     default_put: str | None = None
 
@@ -38,4 +51,3 @@ class BaseIOMultiplexer(BaseIO, CallableMultiplexObject):
 
         # Parent Attributes #
         super().__init__(*args, **kwargs)
-

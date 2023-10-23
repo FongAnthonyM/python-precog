@@ -1,5 +1,5 @@
 """ iomanager.py
-
+An IO object which maps named inputs to names outputs in a one-to-one manner.
 """
 # Package Header #
 from ...header import *
@@ -28,7 +28,23 @@ from .ioconatiner import IOContainer
 # Definitions #
 # Classes #
 class IOManager(BaseDict, BaseIOMultiplexer):
+    """An IO object which maps named inputs to names outputs in a one-to-one manner.
 
+    Class Attributes:
+        default_get: The default name of the method to use for getting.
+        default_put: The default name of the method to use for putting.
+        default_io: The default IO object type to populate this object when constructed.
+
+    Attributes:
+        get: The method multiplexer which manages which get method to run when called.
+        put: The method multiplexer which manages which get method to run when called.
+
+    Args:
+        io_: The input/outputs to be managed.
+        *args: Arguments for inheritance.
+        init: Determines if this object will construct.
+        **kwargs: Keyword arguments for inheritance.
+    """
     default_get: str | None = "get_all"
     default_put: str | None = "put_all"
     default_io: type[BaseIO] = IOContainer
@@ -71,11 +87,11 @@ class IOManager(BaseDict, BaseIOMultiplexer):
 
     # Mapping
     def update_io(self, __m: Any = {}, /, **kwargs) -> None:
-        """Updates this object's items. Nones are replaced with the default io type.
+        """Updates this object's items. Nones are replaced with the default IO type.
 
         Args:
-            __m: A mapping with io objects which will replace items in this manager.
-            **kwargs: Io objects which will replace items in this manager.
+            __m: A mapping with IO objects which will replace items in this manager.
+            **kwargs: IO objects which will replace items in this manager.
         """
         items = (kwargs if __m is None else (__m | kwargs))
         self.update({k: (self.default_io() if v is None else v) for k, v in items.items()})
@@ -88,13 +104,13 @@ class IOManager(BaseDict, BaseIOMultiplexer):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Creates a new named io object or new io objects from a list of names.
+        """Creates a new named IO object or new IO objects from a list of names.
 
         Args:
-            name: The key name of the io to create.
-            type_: The type of io to create.
-            *args: The arguments for constructing the new io object.
-            **kwargs: The keyword arguments for constructing the new io object.
+            name: The key name of the IO to create.
+            type_: The type of IO to create.
+            *args: The arguments for constructing the new IO object.
+            **kwargs: The keyword arguments for constructing the new IO object.
         """
         if type_ is None:
             type_ = self.default_io
@@ -107,37 +123,55 @@ class IOManager(BaseDict, BaseIOMultiplexer):
 
     # Get
     def get_item(self, name: str, **kwargs: Any) -> Any:
-        """Gets a value from an io object.
+        """Gets a value from this IO object.
+
+        Args:
+            name: The names of the items to get from this IO object.
 
         Returns:
             The all items.
         """
         return self.data[name].get(name=name, **kwargs)
 
-    def get_all(self, *args, **kwargs) -> dict[str, Any]:
-        """Gets all items from the io object.
+    def get_items(self, names: Iterable[str, ...], **kwargs: Any) -> Any:
+        """Gets multiple values from this IO object.
+
+        Args:
+            names: The names of the items to get from this IO object.
 
         Returns:
-            The all items in the io objects.
+            The all items.
+        """
+        return tuple(self.data[name].get(name=name, **kwargs) for name in names)
+
+    def get_all(self, *args, **kwargs) -> dict[str, Any]:
+        """Gets all items from the IO object.
+
+        Args:
+            *args: The arguments to use to get from the contained objects.
+            **kwargs: The keyword arguments to use to get from the contained objects.
+
+        Returns:
+            The all items in the IO objects.
         """
         return {k: v.get(*args, **kwargs) for k, v in self.data.items()}
 
     # Put
     def put_item(self, name: str, value: dict[str, Any]) -> None:
-        """Put an item into an io object.
+        """Put an item into an IO object.
 
         Args:
-            name: The key name to the io object to put the item into.
-            value: The keyword arguments of the put of the io object.
+            name: The key name to the IO object to put the item into.
+            value: The keyword arguments of the put of the IO object.
         """
         self.data[name].put(**value)
 
     def put_all(self, __m: Any = None, /, **kwargs: Any) -> None:
-        """Puts all given keyword io values into their io objects.
+        """Puts all given keyword IO values into their IO objects.
 
         Args:
-            __m: A mapping with the io values to put into io objects.
-            **kwargs: The io values to put into io objects.
+            __m: A mapping with the IO values to put into IO objects.
+            **kwargs: The IO values to put into IO objects.
         """
         for k, v in (kwargs if __m is None else (__m | kwargs)).items():
             self.data[k].put(**v)

@@ -1,5 +1,5 @@
 """ baseio.py
-
+An abstract class for IO objects.
 """
 # Package Header #
 from ...header import *
@@ -24,6 +24,7 @@ from baseobjects import BaseObject
 # Definitions #
 # Classes #
 class BaseIO(BaseObject):
+    """An abstract class for IO objects."""
 
     # Instance Methods #
     def get(self, *args, **kwargs) -> Any:

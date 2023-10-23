@@ -1,5 +1,5 @@
 """ baseoperation.py
-
+An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
 """
 # Package Header #
 from ..header import *
@@ -15,7 +15,6 @@ __email__ = __email__
 # Standard Libraries #
 from abc import abstractmethod
 from typing import Any
-from warnings import warn
 
 # Third-Party Packages #
 from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
@@ -27,6 +26,42 @@ from .io import IOManager
 # Definitions #
 # Classes #
 class BaseOperation(CallableMultiplexObject):
+    """An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
+
+    In subclasses the "evaluate" method must be defined as it is data processing element of this object. Additionally,
+    the "input_names" and "output_names" must be defined to ensure the IO is mapped properly. "input_names" must match
+    the keyword arguments of the "evaluate" method. "output_names" are names for each of the elements of the outputs
+    tuple of the "evaluate" method.
+
+    "evaluate" can be called directly which will run without using the Operation IO. This is useful for processing data
+    without using the Object IO architecture.
+
+    To use the Object IO architecture "execute" should be called. "execute" first gets the inputs from the inputs
+    manager and passes it to "evaluate" method. After evaluating, the output from "evaluate" is then put into the
+    outputs manager to be used later.
+
+    "execute" is also MethodMultiplexer, meaning that its call is delegated to different specified method. This gives
+    Operation the flexibility to change the "execute" method's implementation during runtime.
+
+    Class Attributes:
+        default_execute: The default name of the method to use for execution.
+        default_input_names: The default ordered tuple with the names of the inputs to an Operation.
+        default_output_names: The default ordered tuple with the names of the outputs to an Operation.
+
+    Attributes:
+        inputs: The inputs manager of the Operation.
+        outputs: The outputs manager of the Operation.
+        execute: The method multiplexer which manages which execute method to run when called.
+        input_names: The ordered tuple with the names of the inputs to an Operation.
+        _output_names: The ordered tuple with the names of the outputs to an Operation.
+
+    Args:
+        *args: Arguments for inheritance.
+        init_io: Determines if construct_io run during this construction.
+        setup: Determines if setup will run during this construction.
+        init: Determines if this object will construct.
+        **kwargs: Keyword arguments for inheritance.
+    """
     default_execute: str | None = None
     default_input_names: tuple[str, ...] = ()
     default_output_names: tuple[str, ...] = ()
@@ -58,12 +93,15 @@ class BaseOperation(CallableMultiplexObject):
         # Construct #
         if init:
             self.construct(
+                *args,
                 init_io=init_io,
                 steps_up=steps_up,
+                **kwargs,
             )
 
     @property
     def output_names(self) -> tuple[str, ...]:
+        """The order tuple of the names of the outputs"""
         return self._output_names
 
     @output_names.setter
@@ -112,16 +150,27 @@ class BaseOperation(CallableMultiplexObject):
         self.inputs.create_io(self.input_names, *args, **kwargs)
         self.outputs.create_io(self.output_names, *args, **kwargs)
 
-    def parse_output(self, *args) -> dict[str, Any]:
-        """Parses the output from the evaluate method and returns a dictionary of the outputs.
+    def output_as_dict(self, output: tuple[Any, ...]) -> dict[str, Any]:
+        """Parses the output tuple from the evaluate method and returns a dictionary of the outputs.
 
         Args:
-            *args: The order tuple of the outputs to load into a dictionary.
+            output: The output of the evaluate method.
 
         Returns:
             The dictionary of outputs.
         """
-        return dict(zip(self.output_names, args))
+        return dict(zip(self.output_names, output))
+
+    def output_as_tuple(self, output: dict[str, Any]) -> tuple[Any, ...]:
+        """Parses the output dictionary from the outputs and returns a tuple of the outputs.
+
+        Args:
+            output: The output from the outputs object.
+
+        Returns:
+            The tuple of outputs.
+        """
+        return tuple(output.get(name) for name in self.output_names)
 
     # Setup
     def setup(self, *args: Any, **kwargs: Any) -> None:
@@ -143,10 +192,14 @@ class BaseOperation(CallableMultiplexObject):
         pass
 
     # Execute
+    def execute_dict_output(self) -> None:
+        """Evaluates from the inputs and puts the output dict directly to the outputs."""
+        self.outputs.put_all(self.evaluate(**self.inputs.get_all()))
+
     def execute_one_output(self) -> None:
         """Evaluates from the inputs and puts the single result to the outputs."""
-        self.outputs.put_all(self.parse_output(self.evaluate(**self.inputs.get_all())))
+        self.outputs.put_all(self.output_as_dict((self.evaluate(**self.inputs.get_all()),)))
         
     def execute_multiple_outputs(self) -> None:
         """Evaluates from the inputs and puts the multiple results to the outputs."""
-        self.outputs.put_all(self.parse_output(*self.evaluate(**self.inputs.get_all())))
+        self.outputs.put_all(self.output_as_dict(self.evaluate(**self.inputs.get_all())))

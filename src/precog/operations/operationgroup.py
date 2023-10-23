@@ -1,5 +1,5 @@
-""" baseoperation.py
-
+""" operationgroup.py
+An Operation which contains several Operation objects to execute.
 """
 # Package Header #
 from ..header import *
@@ -13,9 +13,8 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
+from collections.abc import Mapping
 from typing import Any
-from warnings import warn
 
 # Third-Party Packages #
 from baseobjects.collections import OrderableDict
@@ -27,14 +26,42 @@ from .baseoperation import BaseOperation
 # Definitions #
 # Classes #
 class OperationGroup(BaseOperation):
-    default_execute: str | None = None
-    default_input_names: tuple[str, ...] = ()
-    default_output_names: tuple[str, ...] = ()
+    """An Operation which contains several Operation objects to execute.
+
+    OperationGroup is more of an abstract class because IO and contained Operations must be defined, but an
+    OperationGroup object can still function properly without defining those.
+
+    The IO and/or contained Operations can be defined in either the "construction_io" or the "setup" methods. Operations
+    could also be defined outside the OperationGroup class and be added into the OrderableDict "operations" directly.
+
+    Class Attributes:
+        default_execute: The default name of the method to use for execution.
+        default_input_names: The default ordered tuple with the names of the inputs to an Operation.
+        default_output_names: The default ordered tuple with the names of the outputs to an Operation.
+
+    Attributes:
+        inputs: The inputs manager of the Operation.
+        outputs: The outputs manager of the Operation.
+        execute: The method multiplexer which manages which execute method to run when called.
+        input_names: The ordered tuple with the names of the inputs to an Operation.
+        _output_names: The ordered tuple with the names of the outputs to an Operation.
+        operations: The ordered dictionary of Operation to execute and the order to execute them in.
+
+    Args:
+        operations: The dictionary of Operation to add to the OperationGroup.
+        *args: Arguments for inheritance.
+        init_io: Determines if construct_io run during this construction.
+        setup: Determines if setup will run during this construction.
+        init: Determines if this object will construct.
+        **kwargs: Keyword arguments for inheritance.
+    """
+    default_execute: str | None = "execute_all"
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
+        operations: Mapping[str, BaseOperation] | None = None,
         *args: Any,
         init_io: bool = True,
         steps_up: bool = True,
@@ -50,27 +77,18 @@ class OperationGroup(BaseOperation):
         # Construct #
         if init:
             self.construct(
+                operations=operations,
+                *args,
                 init_io=init_io,
                 steps_up=steps_up,
+                **kwargs,
             )
-
-    @property
-    def output_names(self) -> tuple[str, ...]:
-        return self._output_names
-
-    @output_names.setter
-    def output_names(self, value: tuple[str, ...]) -> None:
-        if self.execute.selected in {None, "execute_one_output", "execute_multiple_outputs"}:
-            if len(value) == 1:
-                self.execute.select("execute_one_output")
-            else:
-                self.execute.select("execute_multiple_outputs")
-        self._output_names = value
 
     # Instance Methods #
     # Constructors/Destructors
     def construct(
         self,
+        operations: Mapping[str, BaseOperation] | None = None,
         *args: Any,
         init_io: bool = True,
         setup: bool = True,
@@ -79,46 +97,17 @@ class OperationGroup(BaseOperation):
         """Constructs this object.
 
         Args:
+            operations: The dictionary of Operation to add to the OperationGroup.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
             setup: Determines if setup will run during this construction
             **kwargs: Keyword arguments for inheritance.
         """
+        if operations is not None:
+            self.operations.update(operations)
+
         # Construct Parent #
-        super().construct(*args, **kwargs)
-
-        if init_io:
-            self.construct_io()
-
-        if setup:
-            self.setup()
-
-    # IO
-    def construct_io(self, *args, **kwargs) -> None:
-        """Constructs the io for this object.
-
-        Args:
-            *args: The arguments for constructing the io.
-            **kwargs: The keyword arguments for constructing the io.
-        """
-        self.inputs.create_io(self.input_names, *args, **kwargs)
-        self.outputs.create_io(self.output_names, *args, **kwargs)
-
-    def parse_output(self, *args) -> dict[str, Any]:
-        """Parses the output from the evaluate method and returns a dictionary of the outputs.
-
-        Args:
-            *args: The order tuple of the outputs to load into a dictionary.
-
-        Returns:
-            The dictionary of outputs.
-        """
-        return dict(zip(self.output_names, args))
-
-    # Setup
-    def setup(self, *args: Any, **kwargs: Any) -> None:
-        """A method for setting up the object before it runs operations."""
-        pass
+        super().construct(*args, init_io=init_io, setup=setup, **kwargs)
 
     # Evaluate
     def evaluate(self, *args, **kwargs: Any) -> Any:
@@ -131,14 +120,12 @@ class OperationGroup(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        for operation in self.operations:
-            operation.execute()
+        self.inputs.put_all(kwargs)
+        self.execute()
+        return self.outputs.get_items(self.output_names)
 
     # Execute
-    def execute_one_output(self) -> None:
-        """Evaluates from the inputs and puts the single result to the outputs."""
-        self.outputs.put_all(self.parse_output(self.evaluate(**self.inputs.get_all())))
-        
-    def execute_multiple_outputs(self) -> None:
-        """Evaluates from the inputs and puts the multiple results to the outputs."""
-        self.outputs.put_all(self.parse_output(*self.evaluate(**self.inputs.get_all())))
+    def execute_all(self) -> None:
+        """Executes all operations within this operation group."""
+        for operation in self.operations:
+            operation.execute()
