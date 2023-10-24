@@ -1,8 +1,8 @@
-""" exampleoperationgroup.py
-An Operation which contains several Operation objects to execute.
+""" isequaloperation.py
+An Operation which checks if all values in the array are equal. Can select the equals methods.
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -13,31 +13,20 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from collections.abc import Mapping
 from typing import Any
 
 # Third-Party Packages #
-from baseobjects.collections import OrderableDict
+from baseobjects.functions import MethodMultiplexer
+import numpy as np
 
 # Local Packages #
-from .baseoperation import BaseOperation
+from precog.operations import BaseOperation
 
 
 # Definitions #
 # Classes #
-class OperationGroup(BaseOperation):
-    """An Operation which contains several Operation objects to execute.
-
-    OperationGroup is more of an abstract class because IO and contained Operations must be defined, but an
-    OperationGroup object can still function properly without defining those.
-
-    The IO and/or contained Operations can be defined in either the "construction_io" or the "setup" methods. Operations
-    could also be defined outside the OperationGroup class and be added into the OrderableDict "operations" directly.
-
-    Class Attributes:
-        default_execute: The default name of the method to use for execution.
-        default_input_names: The default ordered tuple with the names of the inputs to an Operation.
-        default_output_names: The default ordered tuple with the names of the outputs to an Operation.
+class IsEqualOperation(BaseOperation):
+    """An Operation which checks if all values in the array are equal. Can select the equals methods.
 
     Attributes:
         inputs: The inputs manager of the Operation.
@@ -45,23 +34,26 @@ class OperationGroup(BaseOperation):
         execute: The method multiplexer which manages which execute method to run when called.
         input_names: The ordered tuple with the names of the inputs to an Operation.
         _output_names: The ordered tuple with the names of the outputs to an Operation.
-        operations: The ordered dictionary of Operation to execute and the order to execute them in.
+
+        is_equal: The method multiplexer which manages which is_equal method to run when called.
 
     Args:
-        operations: The dictionary of Operation to add to the OperationGroup.
+        equals_method: The name of the equals method to use.
         *args: Arguments for inheritance.
         init_io: Determines if construct_io run during this construction.
         setup: Determines if setup will run during this construction.
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
     """
-    default_execute: str | None = "execute_all"
+    default_input_names: tuple[str, ...] = ("data",)
+    default_output_names: tuple[str, ...] = ("result",)
+    default_equals_method: str = "all"
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        operations: Mapping[str, BaseOperation] | None = None,
+        equals_method: str | None = None,
         *args: Any,
         init_io: bool = True,
         steps_up: bool = True,
@@ -69,7 +61,7 @@ class OperationGroup(BaseOperation):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.operations: OrderableDict[str, BaseOperation] = OrderableDict()
+        self.is_equal: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_equals_method)
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -77,7 +69,7 @@ class OperationGroup(BaseOperation):
         # Construct #
         if init:
             self.construct(
-                operations=operations,
+                equals_method=equals_method,
                 *args,
                 init_io=init_io,
                 steps_up=steps_up,
@@ -88,7 +80,7 @@ class OperationGroup(BaseOperation):
     # Constructors/Destructors
     def construct(
         self,
-        operations: Mapping[str, BaseOperation] | None = None,
+        equals_method: str | None = None,
         *args: Any,
         init_io: bool = True,
         setup: bool = True,
@@ -97,36 +89,51 @@ class OperationGroup(BaseOperation):
         """Constructs this object.
 
         Args:
-            operations: The dictionary of Operation to add to the OperationGroup.
+            equals_method: The name of the equals method to use.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
             setup: Determines if setup will run during this construction
             **kwargs: Keyword arguments for inheritance.
         """
-        if operations is not None:
-            self.operations.update(operations)
+        if equals_method is not None:
+            self.is_equal.select(equals_method)
 
         # Construct Parent #
         super().construct(*args, init_io=init_io, setup=setup, **kwargs)
 
-    # Evaluate
-    def evaluate(self, *args: Any, **kwargs: Any) -> Any:
-        """An abstract method which is the evaluation of this object.
+    # Is Equal
+    def all(self, data: np.ndarray) -> bool:
+        """Checks if all the values in data are the same.
 
         Args:
+            data: The array to check.
+
+        Returns:
+            The boolean if all values are the same.
+        """
+        return np.all(data[0])
+
+    def unique(self, data: np.ndarray) -> bool:
+        """Checks if all the values in data are unique.
+
+        Args:
+            data: The array to check.
+
+        Returns:
+            The boolean if all values are unique.
+        """
+        return np.unique(data).size == data.size
+
+    # Evaluate
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
+        """Checks if all values in the array are equal.
+
+        Args:
+            data: The array to check if all values are equal.
             *args: The arguments for evaluating.
             **kwargs: The keyword arguments for evaluating.
 
         Returns:
-            The result of the evaluation.
+            The boolean if all values are equal.
         """
-        self.inputs.put_all(kwargs)
-        self.execute()
-        outputs = self.outputs.get_items(self.output_names)
-        return outputs if len(outputs) > 1 else outputs[0]
-
-    # Execute
-    def execute_all(self) -> None:
-        """Executes all operations within this operation group."""
-        for operation in self.operations.values():
-            operation.execute()
+        return self.is_equal(data)

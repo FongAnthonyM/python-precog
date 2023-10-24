@@ -21,7 +21,7 @@ from baseobjects import BaseDict
 # Local Packages #
 from .baseio import BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
-from .ioconatiner import IOContainer
+from .iocontainer import IOContainer
 
 
 # Definitions #
@@ -131,5 +131,5 @@ class IORouter(BaseDict, BaseIOMultiplexer):
             *args: The arguments for the inner io object's put.
             **kwargs: The keyword arguments for the inner io object's put.
         """
-        for io_object in self.data.items():
+        for io_object in self.data.values():
             io_object.put(*args, **kwargs)

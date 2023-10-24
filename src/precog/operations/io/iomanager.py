@@ -22,7 +22,7 @@ from baseobjects import BaseDict
 # Local Packages #
 from .baseio import BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
-from .ioconatiner import IOContainer
+from .iocontainer import IOContainer
 
 
 # Definitions #
@@ -174,4 +174,4 @@ class IOManager(BaseDict, BaseIOMultiplexer):
             **kwargs: The IO values to put into IO objects.
         """
         for k, v in (kwargs if __m is None else (__m | kwargs)).items():
-            self.data[k].put(**v)
+            self.data[k].put(v)

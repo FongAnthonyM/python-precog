@@ -15,6 +15,6 @@ __email__ = __email__
 # Local Packages #
 from .baseio import BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
-from .ioconatiner import IOContainer
+from .iocontainer import IOContainer
 from .iomanager import IOManager
 from .iorouter import IORouter

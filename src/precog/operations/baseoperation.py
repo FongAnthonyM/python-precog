@@ -65,6 +65,7 @@ class BaseOperation(CallableMultiplexObject):
     default_execute: str | None = None
     default_input_names: tuple[str, ...] = ()
     default_output_names: tuple[str, ...] = ()
+    execute_output_names: set[str, ...] = {None, "execute_no_output", "execute_one_output", "execute_multiple_outputs"}
 
     # Magic Methods #
     # Construction/Destruction
@@ -106,11 +107,13 @@ class BaseOperation(CallableMultiplexObject):
 
     @output_names.setter
     def output_names(self, value: tuple[str, ...]) -> None:
-        if self.execute.selected in {None, "execute_one_output", "execute_multiple_outputs"}:
+        if self.execute.selected in self.execute_output_names:
             if len(value) == 1:
                 self.execute.select("execute_one_output")
-            else:
+            elif value:
                 self.execute.select("execute_multiple_outputs")
+            else:
+                self.execute.select("execute_no_outputs")
         self._output_names = value
 
     # Instance Methods #
@@ -192,9 +195,9 @@ class BaseOperation(CallableMultiplexObject):
         pass
 
     # Execute
-    def execute_dict_output(self) -> None:
-        """Evaluates from the inputs and puts the output dict directly to the outputs."""
-        self.outputs.put_all(self.evaluate(**self.inputs.get_all()))
+    def execute_no_output(self) -> None:
+        """Evaluates from the inputs and does not output."""
+        self.evaluate(**self.inputs.get_all())
 
     def execute_one_output(self) -> None:
         """Evaluates from the inputs and puts the single result to the outputs."""
@@ -203,3 +206,7 @@ class BaseOperation(CallableMultiplexObject):
     def execute_multiple_outputs(self) -> None:
         """Evaluates from the inputs and puts the multiple results to the outputs."""
         self.outputs.put_all(self.output_as_dict(self.evaluate(**self.inputs.get_all())))
+
+    def execute_dict_output(self) -> None:
+        """Evaluates from the inputs and puts the output dict directly to the outputs."""
+        self.outputs.put_all(self.evaluate(**self.inputs.get_all()))
