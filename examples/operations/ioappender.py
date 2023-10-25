@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 
 # Local Packages #
-from precog.operations.io import BaseIO
+from precog.operations.operation.io import BaseIO
 
 
 # Definitions #

@@ -2,7 +2,7 @@
 An IO object which maps named inputs to names outputs in a one-to-one manner.
 """
 # Package Header #
-from ...header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__

@@ -2,7 +2,7 @@
 An Operation which contains several Operation objects to execute.
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -32,7 +32,7 @@ class OperationGroup(BaseOperation):
     OperationGroup object can still function properly without defining those.
 
     The IO and/or contained Operations can be defined in either the "construction_io" or the "setup" methods. Operations
-    could also be defined outside the OperationGroup class and be added into the OrderableDict "operations" directly.
+    could also be defined outside the OperationGroup class and be added into the OrderableDict "operation" directly.
 
     Class Attributes:
         default_execute: The default name of the method to use for execution.
@@ -127,6 +127,6 @@ class OperationGroup(BaseOperation):
 
     # Execute
     def execute_all(self) -> None:
-        """Executes all operations within this operation group."""
+        """Executes all operation within this operation group."""
         for operation in self.operations.values():
             operation.execute()

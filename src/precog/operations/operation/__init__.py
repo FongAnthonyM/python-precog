@@ -13,5 +13,6 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .operation import *
-from .features import *
+from .io import *
+from .baseoperation import BaseOperation
+from .operationgroup import OperationGroup

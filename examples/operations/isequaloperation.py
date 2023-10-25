@@ -20,7 +20,7 @@ from baseobjects.functions import MethodMultiplexer
 import numpy as np
 
 # Local Packages #
-from precog.operations import BaseOperation
+from precog.operations.operation import BaseOperation
 
 
 # Definitions #

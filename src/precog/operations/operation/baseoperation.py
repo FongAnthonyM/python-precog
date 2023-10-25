@@ -2,7 +2,7 @@
 An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -177,7 +177,7 @@ class BaseOperation(CallableMultiplexObject):
 
     # Setup
     def setup(self, *args: Any, **kwargs: Any) -> None:
-        """A method for setting up the object before it runs operations."""
+        """A method for setting up the object before it runs operation."""
         pass
 
     # Evaluate

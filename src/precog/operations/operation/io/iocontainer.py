@@ -2,7 +2,7 @@
 An IO object which stores a single value within it.
 """
 # Package Header #
-from ...header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__

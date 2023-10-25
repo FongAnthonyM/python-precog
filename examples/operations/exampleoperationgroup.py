@@ -18,8 +18,8 @@ from typing import Any
 # Third-Party Packages #
 
 # Local Packages #
-from precog.operations import OperationGroup
-from precog.operations.io import IORouter
+from precog.operations.operation import OperationGroup
+from precog.operations.operation.io import IORouter
 from .ioappender import IOAppender
 from .rngoperation import RNGOperation
 from .sumoperation import SumOperation
@@ -45,7 +45,7 @@ class ExampleOperationGroup(OperationGroup):
         self.inputs = generator.inputs  # Can completely replace group inputs to reroute all inputs.
 
         # Inner Operation IO
-        # Route the RNG output to inputs of both the sum operations.
+        # Route the RNG output to inputs of both the sum operation.
         generator_router = IORouter({"sum_1": sum_1.inputs["data"], "sum_2": sum_2.inputs["data"]})
         generator.outputs["out_array"] = generator_router
 
