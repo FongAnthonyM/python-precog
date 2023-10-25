@@ -27,7 +27,7 @@ from ..operation import BaseOperation
 # Definitions #
 # Classes #
 class MeanMemory(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", "weight",)
+    default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("shifted_data",)
     default_apply_shift: str = "mean"
 
@@ -36,6 +36,7 @@ class MeanMemory(BaseOperation):
     def __init__(
         self,
         apply_shift: str | None = None,
+	forget_factor: float | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -69,6 +70,7 @@ class MeanMemory(BaseOperation):
     def construct(
         self,
         apply_shift: str | None = None,
+        forget_factor: float | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -98,15 +100,26 @@ class MeanMemory(BaseOperation):
         pass
 
     # Shift
-    def mean(self, data, weight) -> np.ndarray:
-        temp_sum = self.mem_sum + np.cumsum(data, axis=self.axis)
-        temp_sum2 = np.append((self.mem_sum, temp_sum[1:]))
-        temp_weight = self.mem_weight + weight
+    def mean(self, data) -> np.ndarray:
+        axis_swap = (self.axis, -1)
+        axis_unswap = (-1, self.axis)
+        data = np.moveaxis(data, axis_swap[0], axis_swap[1])
+        shifted_data = np.zeros_like(data)
 
-        self.mem_sum = temp_sum
-        # 1. compute the new mem_sum and new mem_weight (hold in temp).
-        # 2. perform the shifting along desired axis (using old mem attributes).
-        # 3. update the mem_sum and mem_weight.
+        for i in range(data.shape[-1]):
+            if self.forget_factor is None:
+                alpha = 1 / (self.mem_count + (i+1))
+            else:
+                alpha = self.forget_factor
+
+            shifted_data[..., i] = data[..., i] - self.mem_sum
+            self.mem_sum += shifted_data[..., i]*alpha
+        self.mem_count += data.shape[-1]
+
+	data = np.moveaxis(data, axis_unswap[0], axis_unswap[1])
+        shifted_data = np.moveaxis(shifted_data, axis_unswap[0], axis_unswap[1])
+
+        return shifted_data
 
     # Evaluate
     def evaluate(self, data: np.ndarray | None = None, weight: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
