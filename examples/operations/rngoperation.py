@@ -73,12 +73,7 @@ class RNGOperation(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(
-                *args,
-                init_io=init_io,
-                steps_up=steps_up,
-                **kwargs,
-            )
+            self.construct(*args, init_io=init_io, steps_up=steps_up, **kwargs)
 
     # Evaluate
     def evaluate(self, *args, **kwargs: Any) -> Any:

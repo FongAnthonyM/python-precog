@@ -58,7 +58,8 @@ class BaseOperation(CallableMultiplexObject):
     Args:
         *args: Arguments for inheritance.
         init_io: Determines if construct_io run during this construction.
-        setup: Determines if setup will run during this construction.
+        sets_up: Determines if setup will run during this construction.
+        setup_kwargs: The keyword arguments for the setup method.
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
     """
@@ -73,7 +74,8 @@ class BaseOperation(CallableMultiplexObject):
         self,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -93,12 +95,7 @@ class BaseOperation(CallableMultiplexObject):
 
         # Construct #
         if init:
-            self.construct(
-                *args,
-                init_io=init_io,
-                steps_up=steps_up,
-                **kwargs,
-            )
+            self.construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     @property
     def output_names(self) -> tuple[str, ...]:
@@ -122,7 +119,8 @@ class BaseOperation(CallableMultiplexObject):
         self,
         *args: Any,
         init_io: bool = True,
-        setup: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -130,7 +128,8 @@ class BaseOperation(CallableMultiplexObject):
         Args:
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
-            setup: Determines if setup will run during this construction
+            sets_up: Determines if setup will run during this construction.
+            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         # Construct Parent #
@@ -139,8 +138,8 @@ class BaseOperation(CallableMultiplexObject):
         if init_io:
             self.construct_io()
 
-        if setup:
-            self.setup()
+        if sets_up:
+            self.setup(**setup_kwargs)
 
     # IO
     def construct_io(self, *args, **kwargs) -> None:

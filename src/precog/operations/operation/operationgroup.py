@@ -51,7 +51,8 @@ class OperationGroup(BaseOperation):
         operations: The dictionary of Operation to add to the OperationGroup.
         *args: Arguments for inheritance.
         init_io: Determines if construct_io run during this construction.
-        setup: Determines if setup will run during this construction.
+        sets_up: Determines if setup will run during this construction.
+        setup_kwargs: The keyword arguments for the setup method.
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
     """
@@ -64,7 +65,8 @@ class OperationGroup(BaseOperation):
         operations: Mapping[str, BaseOperation] | None = None,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: bool = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -77,10 +79,11 @@ class OperationGroup(BaseOperation):
         # Construct #
         if init:
             self.construct(
-                operations=operations,
                 *args,
+                operations=operations,
                 init_io=init_io,
-                steps_up=steps_up,
+                sets_up=sets_up,
+                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -89,9 +92,10 @@ class OperationGroup(BaseOperation):
     def construct(
         self,
         operations: Mapping[str, BaseOperation] | None = None,
-        *args: Any,
-        init_io: bool = True,
-        setup: bool = True,
+        *args: Mapping[str, BaseOperation] | None,
+        init_io: Any = True,
+        sets_up: bool = True,
+        setup_kwargs: bool = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -100,14 +104,15 @@ class OperationGroup(BaseOperation):
             operations: The dictionary of Operation to add to the OperationGroup.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
-            setup: Determines if setup will run during this construction
+            sets_up: Determines if setup will run during this construction.
+            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if operations is not None:
             self.operations.update(operations)
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, setup=setup, **kwargs)
+        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Evaluate
     def evaluate(self, *args: Any, **kwargs: Any) -> Any:

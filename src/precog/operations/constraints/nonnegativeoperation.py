@@ -39,7 +39,8 @@ class NonNegativeOperation(BaseOperation):
         non_negative_kwargs: dict[str, Any] | None = None,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -53,11 +54,12 @@ class NonNegativeOperation(BaseOperation):
         # Construct #
         if init:
             self.construct(
+                *args,
                 non_negative=non_negative,
                 non_negative_kwargs=non_negative_kwargs,
-                *args,
                 init_io=init_io,
-                steps_up=steps_up,
+                sets_up=sets_up,
+                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -67,18 +69,19 @@ class NonNegativeOperation(BaseOperation):
         self,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
-        *args: Any,
+        *args: str | None,
         init_io: bool = True,
-        setup: bool = True,
+        sets_up: Any = True,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
-            non_negative: The name of the non-negative method to use.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
-            setup: Determines if setup will run during this construction
+            sets_up: Determines if setup will run during this construction.
+            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if non_negative is not None:
@@ -89,7 +92,7 @@ class NonNegativeOperation(BaseOperation):
             self.non_negative_kwargs.update(non_negative_kwargs)
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, setup=setup, **kwargs)
+        super().construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Non-Negative
     def clip(self, data: np.ndarray, threshold: float = 0, **kwargs: Any) -> np.ndarray:
