@@ -95,7 +95,7 @@ class BaseOperation(CallableMultiplexObject):
 
         # Construct #
         if init:
-            self.construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+            self.construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     @property
     def output_names(self) -> tuple[str, ...]:
@@ -139,7 +139,7 @@ class BaseOperation(CallableMultiplexObject):
             self.construct_io()
 
         if sets_up:
-            self.setup(**setup_kwargs)
+            self.setup(**({} if setup_kwargs is None else setup_kwargs))
 
     # IO
     def construct_io(self, *args, **kwargs) -> None:

@@ -59,7 +59,7 @@ class RNGOperation(BaseOperation):
         shift: float = 0.0,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -73,7 +73,7 @@ class RNGOperation(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(*args, init_io=init_io, steps_up=steps_up, **kwargs)
+            self.construct(*args, init_io=init_io, sets_up=sets_up, **kwargs)
 
     # Evaluate
     def evaluate(self, *args, **kwargs: Any) -> Any:

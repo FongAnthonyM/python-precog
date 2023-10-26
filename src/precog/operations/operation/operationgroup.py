@@ -95,7 +95,7 @@ class OperationGroup(BaseOperation):
         *args: Mapping[str, BaseOperation] | None,
         init_io: Any = True,
         sets_up: bool = True,
-        setup_kwargs: bool = None,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -125,7 +125,7 @@ class OperationGroup(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        self.inputs.put_all(kwargs)
+        self.inputs.put_all(**kwargs)
         self.execute()
         outputs = self.outputs.get_items(self.output_names)
         return outputs if len(outputs) > 1 else outputs[0]

@@ -92,7 +92,7 @@ class NonNegativeOperation(BaseOperation):
             self.non_negative_kwargs.update(non_negative_kwargs)
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Non-Negative
     def clip(self, data: np.ndarray, threshold: float = 0, **kwargs: Any) -> np.ndarray:

@@ -32,15 +32,15 @@ blank_arg = object()
 # Classes #
 class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("shifted_data",)
-    default_rescale_shift: str = "shift_rescale_mean_std"
+    default_output_names: tuple[str, ...] = ("ss_data",)
+    default_shift_rescale: str = "shift_rescale_mean_std"
     default_forget: str | None = None
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        apply_shift: str | None = None,
+        shift_rescale: str | None = None,
         forget_factor: float | None | object = blank_arg,
         axis: int | None = None,
         *args: Any,
@@ -64,23 +64,15 @@ class RunningShiftScaler(BaseOperation):
         self._forget_factor: float | None = None
 
         self.forget: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_forget)
-        self.rescale_shift: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_rescale_shift)
+        self.shift_rescale: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_shift_rescale)
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
-            self.construct(
-                *args,
-                apply_shift=apply_shift,
-                forget_factor=forget_factor,
-                axis=axis,
-                init_io=init_io,
-                steps_up=sets_up,
-                setup_kwargs=setup_kwargs,
-                **kwargs,
-            )
+            self.construct(shift_rescale, forget_factor, axis, *args, init_io=init_io, setup_kwargs=setup_kwargs,
+                           sets_up=sets_up, **kwargs)
 
     @property
     def forget_factor(self) -> float:
@@ -99,7 +91,7 @@ class RunningShiftScaler(BaseOperation):
     # Constructors/Destructors
     def construct(
         self,
-        apply_shift: str | None = None,
+        shift_rescale: str | None = None,
         forget_factor: float | None | object = blank_arg,
         axis: int | None = None,
         *args: Any,
@@ -120,14 +112,14 @@ class RunningShiftScaler(BaseOperation):
         if axis is not None:
             self.axis = axis
 
-        if apply_shift is not None:
-            self.rescale_shift.select(apply_shift)
+        if shift_rescale is not None:
+            self.shift_rescale.select(shift_rescale)
 
         if forget_factor is not blank_arg:
             self.forget_factor = forget_factor
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     def create_previous_mean(self, shape, dtype):
         self.previous_mean = np.expand_dims(np.zeros(shape, dtype), self.axis)
@@ -135,10 +127,17 @@ class RunningShiftScaler(BaseOperation):
             self.previous_mean.fill(self.previous_mean_fill_value)
         return self.previous_mean
 
+    def create_previous_std(self, shape, dtype):
+        self.previous_std = np.expand_dims(np.ones(shape, dtype), self.axis)
+        if self.previous_std_fill_value != 1:
+            self.previous_std.fill(self.previous_std_fill_value)
+        return self.previous_std
+
     # Setup
-    def setup(self, previous_sum: np.ndarray, *args: Any, **kwargs: Any) -> None:
+    def setup(self, previous_sum: np.ndarray | None = None, *args: Any, **kwargs: Any) -> None:
         """A method for setting up the object before it runs operation."""
-        self.previous_mean = previous_sum
+        if previous_sum is not None:
+            self.previous_mean = previous_sum
 
     # Forgetting
     def constant_forget(self, index, **kwargs):
@@ -216,4 +215,8 @@ class RunningShiftScaler(BaseOperation):
             shape = list(data.shape)
             shape.pop(self.axis)
             self.create_previous_mean(shape, data.dtype)
-        return self.rescale_shift(data)
+        if self.previous_std is None:
+            shape = list(data.shape)
+            shape.pop(self.axis)
+            self.create_previous_std(shape, data.dtype)
+        return self.shift_rescale(data)

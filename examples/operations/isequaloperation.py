@@ -56,7 +56,7 @@ class IsEqualOperation(BaseOperation):
         equals_method: str | None = None,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -68,7 +68,7 @@ class IsEqualOperation(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(*args, sets_up=init_io, equals_method=equals_method, steps_up=steps_up, **kwargs)
+            self.construct(*args, sets_up=init_io, equals_method=equals_method, sets_up=sets_up, **kwargs)
 
     # Instance Methods #
     # Constructors/Destructors
