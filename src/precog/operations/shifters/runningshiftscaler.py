@@ -1,4 +1,4 @@
-""" meanmemory.py
+""" runningshiftscaler.py
 
 """
 # Package Header #
@@ -30,10 +30,10 @@ blank_arg = object()
 
 
 # Classes #
-class MeanMemory(BaseOperation):
+class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("shifted_data",)
-    default_apply_shift: str = "mean"
+    default_rescale_shift: str = "mean"
     default_forget: str | None = None
 
     # Magic Methods #
@@ -52,11 +52,19 @@ class MeanMemory(BaseOperation):
     ) -> None:
         # New Attributes #
         self.axis: int = 0
-        self.mem_sum: np.ndarray | None = None
-        self.mem_weight: np.ndarray | None = None
 
-        self.apply_shift: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_apply_shift)
+        self.previous_mean: np.ndarray | None = None
+        self.previous_mean_fill_value: float | int = 0
+
+        self.previous_std: np.ndarray | None = None
+        self.previous_std_fill_value: float | int = 1
+
+        self.previous_count: int = 0
+
+        self._forget_factor: float | None = None
+
         self.forget: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_forget)
+        self.rescale_shift: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_rescale_shift)
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -73,7 +81,7 @@ class MeanMemory(BaseOperation):
                 setup_kwargs=setup_kwargs,
                 **kwargs,
             )
-            
+
     @property
     def forget_factor(self) -> float:
         return self._forget_factor
@@ -113,7 +121,7 @@ class MeanMemory(BaseOperation):
             self.axis = axis
 
         if apply_shift is not None:
-            self.apply_shift.select(apply_shift)
+            self.rescale_shift.select(apply_shift)
 
         if forget_factor is not blank_arg:
             self.forget_factor = forget_factor
@@ -121,53 +129,38 @@ class MeanMemory(BaseOperation):
         # Construct Parent #
         super().construct(*args, init_io=init_io, steps_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
-    def create_previous_sum(self, shape, dtype):
-        self.previous_sum = np.zeros(shape, dtype)
-        if self.previous_sum_fill_value != 0:
-            self.previous_sum.fill(self.previous_sum_fill_value)
-        return self.previous_sum
+    def create_previous_mean(self, shape, dtype):
+        self.previous_mean = np.expand_dims(np.zeros(shape, dtype), self.axis)
+        if self.previous_mean_fill_value != 0:
+            self.previous_mean.fill(self.previous_mean_fill_value)
+        return self.previous_mean
 
     # Setup
     def setup(self, previous_sum: np.ndarray, *args: Any, **kwargs: Any) -> None:
         """A method for setting up the object before it runs operation."""
-        self.previous_sum = previous_sum
+        self.previous_mean = previous_sum
 
     # Forgetting
     def constant_forget(self, index, **kwargs):
-        return 1 / (self.mem_count + (index + 1))
+        return 1 / (self.previous_count + (index + 1))
 
     def exponential_forget(self, **kwargs):
         return self.forget_factor
 
     # Shift
-    def mean(self, data) -> np.ndarray:
-        axis_swap = (self.axis, -1)
-        axis_unswap = (-1, self.axis)
-        data = np.moveaxis(data, axis_swap[0], axis_swap[1])
-        shifted_data = np.zeros_like(data)
-
-        for i in range(data.shape[-1]):
-            shifted_data[..., i] = data[..., i] - self.previous_sum
-            self.previous_sum += shifted_data[..., i] * self.forget(index=i)
-        self.mem_count += data.shape[-1]
-
-        shifted_data = np.moveaxis(shifted_data, axis_unswap[0], axis_unswap[1])
-
-        return shifted_data
-
-    def mean_alternative(self, data) -> np.ndarray:
+    def shift_mean(self, data) -> np.ndarray:
         shifted_data = np.empty_like(data)
         slices = [slice(None)] * len(data.shape)
         for i in range(data.shape[self.axis]):
             slices[self.axis] = i
             t_slices = tuple(slices)
-            shifted_data[t_slices] = data[t_slices] - self.previous_sum
-            self.previous_sum += shifted_data[t_slices] * self.forget(index=i)
-        self.mem_count += data.shape[-1]
+            shifted_data[t_slices] = data[t_slices] - self.previous_mean
+            self.previous_mean = self.previous_mean + shifted_data[t_slices] * self.forget(index=i)
+        self.previous_count += data.shape[-1]
         return shifted_data
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, weight: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -177,4 +170,8 @@ class MeanMemory(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        return self.apply_shift(data, weight)
+        if self.previous_mean is None:
+            shape = list(data.shape)
+            shape.pop(self.axis)
+            self.create_previous_mean(shape, data.dtype)
+        return self.rescale_shift(data)
