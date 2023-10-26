@@ -64,13 +64,14 @@ class TestNNMFLineLengthStandardizer(ClassTest):
 
         assert np.all(out >= 0)
 
-    def test_random_execute(self):
+    def test_random_execute_decay_mean(self):
         samples = 102400
         channels = 512
         t_data = np.random.rand(samples, channels)
 
         standardizer = NNMFLineLengthStandardizer(
             forget_factor=10**-6,
+            shift_scale="shift_decaying_mean",
         )
         out = standardizer.evaluate(data=t_data)
 

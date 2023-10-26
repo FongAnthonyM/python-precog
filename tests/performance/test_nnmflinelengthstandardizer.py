@@ -108,12 +108,36 @@ class ClassTest:
 class TestNNMFLineLengthStandardizer(ClassTest):
 
     def test_random_execute(self):
-        samples = 102400
+        samples = 10240
+        channels = 256
+        t_data = np.random.rand(samples, channels)
+
+        standardizer = NNMFLineLengthStandardizer(
+            forget_factor=10**-6,
+        )
+
+        pr = cProfile.Profile()
+        pr.enable()
+
+        out = standardizer.evaluate(data=t_data)
+
+        pr.disable()
+        s = io.StringIO()
+        sortby = pstats.SortKey.TIME
+        ps = StatsMicro(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+
+        assert np.all(out >= 0)
+
+    def test_random_execute_decay_mean(self):
+        samples = 1024
         channels = 512
         t_data = np.random.rand(samples, channels)
 
         standardizer = NNMFLineLengthStandardizer(
             forget_factor=10**-6,
+            shift_scale="shift_decaying_mean",
         )
 
         pr = cProfile.Profile()

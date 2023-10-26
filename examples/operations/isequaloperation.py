@@ -68,12 +68,18 @@ class IsEqualOperation(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(*args, sets_up=init_io, equals_method=equals_method, sets_up=sets_up, **kwargs)
+            self.construct(*args, init_io=init_io, equals_method=equals_method, sets_up=sets_up, **kwargs)
 
     # Instance Methods #
     # Constructors/Destructors
-    def construct(self, *args: str | None, init_io: Any = True, sets_up: bool = True, setup_kwargs: bool = None,
-                  **kwargs: Any) -> None:
+    def construct(
+        self,
+        equals_method: str | None = None,
+        *args: str | None, init_io: Any = True,
+        sets_up: bool = True,
+        setup_kwargs: bool = None,
+        **kwargs: Any,
+    ) -> None:
         """Constructs this object.
 
         Args:
@@ -85,7 +91,7 @@ class IsEqualOperation(BaseOperation):
             self.is_equal.select(equals_method)
 
         # Construct Parent #
-        super().construct(*args, init_io=sets_up, sets_up=setup, **kwargs)
+        super().construct(*args, init_io=sets_up, sets_up=sets_up, **kwargs)
 
     # Is Equal
     def all(self, data: np.ndarray) -> bool:
