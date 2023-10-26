@@ -159,6 +159,49 @@ class RunningShiftScaler(BaseOperation):
         self.previous_count += data.shape[-1]
         return shifted_data
 
+    def shift_decaying_mean(self, data) -> np.ndarray:
+        # https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf
+        # a3µn−3 + a2(1−a)xn−2 + a(1−a)xn−1 + (1−a)xn
+        slices = [slice(None)] * len(data.shape)
+        slices[self.axis] = -1
+        t_slices = tuple(slices)
+
+        t_shape = [1] * len(data.shape)
+        t_shape[self.axis] = -1
+
+        n_sample = data.shape[self.axis]
+        # Calculate Weights
+        weights = np.empty(n_sample)
+        weights.fill(self.forget_factor)
+        weights = np.power(weights, np.arange(n_sample))[::-1] * (1 - weights)
+
+        # Calculate Decayed Means
+        # a^n * u0 + a^(n-1) * (1-a) + x
+        new_mean = (self.forget_factor ** n_sample) * self.previous_mean + weights.reshape(t_shape) * data
+        self.previous_mean = np.expand_dims(new_mean[t_slices], self.axis)
+
+        # Shift Data
+        shifted_data = data - new_mean
+        return shifted_data
+
+    def mean_and_std(self, data) -> np.ndarray:
+        scaled_data = np.empty_like(data)
+        slices = [slice(None)] * len(data.shape)
+        for i in range(data.shape[self.axis]):
+            slices[self.axis] = i
+            t_slices = tuple(slices)
+            forget_factor = self.forget(index=i)
+
+            # This standardizes the data using values up to (but not including) the current index i
+            shifted_data = data[t_slices] - self.previous_mean
+            scaled_data[t_slices] = shifted_data / self.previous_std
+
+            # This updates the statistics using values up to (and including) the current index i
+            self.previous_mean = self.previous_mean + shifted_data * forget_factor
+            self.previous_std = forget_factor * (self.previous_std + (1-forget_factor) * shifted_data**2)
+        self.previous_count += data.shape[-1]
+        return scaled_data
+
     # Evaluate
     def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
