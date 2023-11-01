@@ -24,7 +24,7 @@ import pytest
 import numpy as np
 
 # Local Packages #
-from src.precog.precoghdf5 import *
+#from src.precog.precoghdf5 import *
 
 
 # Definitions #

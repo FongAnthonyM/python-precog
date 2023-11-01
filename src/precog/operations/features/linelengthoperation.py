@@ -43,7 +43,8 @@ class LineLengthOperation(BaseFeature):
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -59,13 +60,14 @@ class LineLengthOperation(BaseFeature):
         # Construct #
         if init:
             self.construct(
+                *args,
                 squared_estimator=squared_estimator,
                 window_len=window_len,
                 window_type=window_type,
                 axis=axis,
-                *args,
                 init_io=init_io,
-                steps_up=steps_up,
+                sets_up=sets_up,
+                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -79,7 +81,8 @@ class LineLengthOperation(BaseFeature):
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
-        setup: bool = True,
+        sets_up: bool = True,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -87,7 +90,8 @@ class LineLengthOperation(BaseFeature):
         Args:
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
-            setup: Determines if setup will run during this construction
+            sets_up: Determines if setup will run during this construction.
+            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if axis is not None:
@@ -103,7 +107,7 @@ class LineLengthOperation(BaseFeature):
             self.window_type = window_type
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, setup=setup, **kwargs)
+        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Evaluate
     def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:

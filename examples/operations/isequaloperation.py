@@ -56,7 +56,7 @@ class IsEqualOperation(BaseOperation):
         equals_method: str | None = None,
         *args: Any,
         init_io: bool = True,
-        steps_up: bool = True,
+        sets_up: bool = True,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -68,38 +68,30 @@ class IsEqualOperation(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(
-                equals_method=equals_method,
-                *args,
-                init_io=init_io,
-                steps_up=steps_up,
-                **kwargs,
-            )
+            self.construct(*args, init_io=init_io, equals_method=equals_method, sets_up=sets_up, **kwargs)
 
     # Instance Methods #
     # Constructors/Destructors
     def construct(
         self,
         equals_method: str | None = None,
-        *args: Any,
-        init_io: bool = True,
-        setup: bool = True,
+        *args: str | None, init_io: Any = True,
+        sets_up: bool = True,
+        setup_kwargs: bool = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
-            equals_method: The name of the equals method to use.
             *args: Arguments for inheritance.
-            init_io: Determines if construct_io run during this construction.
-            setup: Determines if setup will run during this construction
+            sets_up: Determines if construct_io run during this construction.
             **kwargs: Keyword arguments for inheritance.
         """
         if equals_method is not None:
             self.is_equal.select(equals_method)
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, setup=setup, **kwargs)
+        super().construct(*args, init_io=sets_up, sets_up=sets_up, **kwargs)
 
     # Is Equal
     def all(self, data: np.ndarray) -> bool:
