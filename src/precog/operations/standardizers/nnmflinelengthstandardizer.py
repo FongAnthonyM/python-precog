@@ -17,13 +17,12 @@ from abc import abstractmethod
 from typing import Any, Callable
 
 # Third-Party Packages #
-from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
 
 # Local Packages #
 from ..operation import OperationGroup
-from ..features import LineLengthOperation
-from ..shifters import RunningShiftScaler, blank_arg
-from ..constraints import NonNegativeOperation
+from ..features import LineLength
+from ..shiftrescalers import RunningShiftScaler, blank_arg
+from ..constraints import NonNegative
 
 
 # Definitions #
@@ -133,7 +132,7 @@ class NNMFLineLengthStandardizer(OperationGroup):
     ) -> None:
         """A method for setting up the object before it runs operation."""
         # Create Operations
-        self.operations["line_length"] = line_length = LineLengthOperation(
+        self.operations["line_length"] = line_length = LineLength(
             squared_estimator=squared_estimator,
             window_len=window_len,
             window_type=window_type,
@@ -146,7 +145,7 @@ class NNMFLineLengthStandardizer(OperationGroup):
             axis=axis,
         )
 
-        self.operations["non_negative"] = non_negative_op = NonNegativeOperation(
+        self.operations["non_negative"] = non_negative_op = NonNegative(
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
         )

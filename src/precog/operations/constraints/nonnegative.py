@@ -1,4 +1,4 @@
-""" nonnegativeoperation.py
+""" nonnegative.py
 
 """
 # Package Header #
@@ -26,7 +26,7 @@ from ..operation import BaseOperation
 
 # Definitions #
 # Classes #
-class NonNegativeOperation(BaseOperation):
+class NonNegative(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("nn_data",)
     default_non_negative: str = "clip"

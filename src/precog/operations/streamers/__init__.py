@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -13,3 +13,4 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
+from .proxyarraystreamer import ProxyArrayStreamer

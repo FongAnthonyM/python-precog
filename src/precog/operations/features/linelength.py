@@ -1,4 +1,4 @@
-""" linelengthoperation.py
+""" linelength.py
 
 """
 # Package Header #
@@ -27,7 +27,7 @@ from .basefeature import BaseFeature
 
 # Definitions #
 # Classes #
-class LineLengthOperation(BaseFeature):
+class LineLength(BaseFeature):
     default_axis: int = 0
     default_squared_estimator: bool = False
     default_window_len: int = 0
