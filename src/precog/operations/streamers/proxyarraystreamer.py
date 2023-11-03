@@ -135,9 +135,9 @@ class ProxyArrayStreamer(BaseOperation):
 
     def create_islice_timeaxis(
         self,
-        start: datetime.datetime | float | int | np.dtype | None = None,
-        stop: datetime.datetime | float | int | np.dtype | None = None,
-        step: int | float | datetime.timedelta | None = None,
+        start: datetime | float | int | np.dtype | None = None,
+        stop: datetime | float | int | np.dtype | None = None,
+        step: int | float | timedelta | None = None,
         istep: int = 1,
         approx: bool = True,
         tails: bool = True,

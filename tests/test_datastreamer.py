@@ -25,7 +25,7 @@ import numpy as np
 from ucsfbids import Subject
 
 # Local Packages #
-from precog.operations import CDFSStreamer
+from src.precog.operations import CDFSStreamer
 
 
 # Definitions #
@@ -52,8 +52,8 @@ class ClassTest:
 
 
 class TestCDFSStreamer(ClassTest):
-    subjects_root = pathlib.Path("data_store0/human/converted_clinical")
-    subject_id = "EC283"
+    subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
+    subject_id = "EC0213"
 
     def test_evaluate_stream(self):
         bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
@@ -62,7 +62,7 @@ class TestCDFSStreamer(ClassTest):
         cdfs = session.modalities["ieeg"].cdfs
 
         streamer = CDFSStreamer(cdfs=cdfs)
-        streamer.setup()
+        streamer.setup()  # put kwargs in here
 
         out = streamer.evaluate()
 

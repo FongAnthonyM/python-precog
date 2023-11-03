@@ -20,6 +20,7 @@ from typing import Any
 from torch.nn import Module
 
 # Local Packages #
+from .modelcomponents import BaseModelComponent
 
 
 # Definitions #
@@ -28,7 +29,7 @@ class BaseModel(Module):
     # Construction/Destruction
     def __init__(self, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.motifs: BaseMofits | None = None
+        self.model_components: dict[str, BaseModelComponent] = {}
 
         # Parent Attributes #
         super().__init__(init=False)
