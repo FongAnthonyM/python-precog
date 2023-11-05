@@ -20,7 +20,7 @@ from typing import Any
 from baseobjects import BaseDict
 
 # Local Packages #
-from .baseio import BaseIO
+from .baseio import IOMap, BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
 from .iocontainer import IOContainer
 
@@ -175,3 +175,12 @@ class IOManager(BaseDict, BaseIOMultiplexer):
         """
         for k, v in (kwargs if __m is None else (__m | kwargs)).items():
             self.data[k].put(v)
+
+    # IO Mapping
+    def get_links(self) -> dict[str, IOMap] | None:
+        """Gets the links of this IO object.
+
+       Returns:
+           The links of this IO object.
+       """
+        return {n: m.generate_io_map() for n, m in self.data}

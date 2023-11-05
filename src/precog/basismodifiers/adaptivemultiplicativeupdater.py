@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -35,7 +35,7 @@ class AdaptiveMultiplicativeUpdater(Optimizer):
         """Performs a single update step.
 
         Arguments:
-            closure (callable): a closure that reevaluates the model
+            closure (callable): a closure that reevaluates the models
                 and returns the target and predicted Tensor in the form:
                 ``func()->Tuple(target,predict)``
         """
@@ -54,7 +54,7 @@ class AdaptiveMultiplicativeUpdater(Optimizer):
         # Iterate over each parameter group (specifies order of optimization)
         for group in self.param_groups:
 
-            # Iterate over model parameters within the group
+            # Iterate over models parameters within the group
             # if a gradient is not required then that parameter is "fixed"
             _neg, _pos = None, None
             for p, th in zip(group['params'], group['theta']):

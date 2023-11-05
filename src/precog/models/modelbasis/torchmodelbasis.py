@@ -1,4 +1,4 @@
-"""basemodel.py
+"""modelbasis.py
 
 """
 # Package Header #
@@ -13,27 +13,24 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
 from collections.abc import Iterable, Mapping
 from typing import Any
 
 # Third-Party Packages #
-from baseobjects import BaseObject
-from baseobjects.wrappers import StaticWrapper
 import torch
 from torch import Tensor
 from torch.nn import Parameter
 
 # Local Packages #
 from ..statevariables import BaseStateVariables
+from .modelbasis import ModelBasis
 
 
 # Definitions #
 # Classes #
-class BaseModelComponent(StaticWrapper):
-    _wrapped_types: list[Any] = [Tensor]
-    _wrap_attributes: list[str] = ["tensor"]
+class TorchModelBasis(ModelBasis):
     state_variables_type: type[BaseStateVariables] = BaseStateVariables
+    default_component_types: dict[str, tuple[type, dict[str, Any]]] = {}
 
     # Magic Methods  #
     # Construction/Destruction
@@ -44,12 +41,13 @@ class BaseModelComponent(StaticWrapper):
         requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
         *,
+        component_kwargs: dict[str, dict[str, Any]] | None = None,
+        component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
+        components: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self._tensor: Tensor | None = None
-        self.state_variables: BaseStateVariables | None = None
 
         # Parent Attributes #
         super().__init__(init=False, **kwargs)
@@ -61,6 +59,9 @@ class BaseModelComponent(StaticWrapper):
                 size=size,
                 requires_grad=requires_grad,
                 state_variables=state_variables,
+                component_kwargs=component_kwargs,
+                component_types=component_types,
+                components=components,
                 **kwargs,
             )
 
@@ -71,18 +72,22 @@ class BaseModelComponent(StaticWrapper):
         requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
         *args: Any,
+        component_kwargs: dict[str, dict[str, Any]] | None = None,
+        component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
+        components: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        if tensor is not None:
-            self._tensor = tensor
-        elif size is not None:
+        if size is not None and tensor is None:
             self.create_tensor(size=size, requires_grad=requires_grad)
 
-        if state_variables is not None:
-            self.state_variables(dict_=state_variables)
-
         # Construct Parent #
-        super().construct(*args, **kwargs)
+        super().construct(
+            tensor=tensor,
+            component_kwargs=component_kwargs,
+            component_types=component_types,
+            components=components,
+            **kwargs,
+        )
 
     def create_tensor(self, size: Iterable[int], requires_grad: bool = True, **kwargs: Any) -> Tensor:
         """Create an empty tensor which contains values.
@@ -92,9 +97,5 @@ class BaseModelComponent(StaticWrapper):
             requires_grad:
             **kwargs: The keyword arguments for creating an empty tensor.
         """
-        self._tensor = Parameter(torch.empty(*size, **kwargs), requires_grad=requires_grad)
-        return self._tensor
-
-    def create_state_variables(self, dict_: Mapping[str, Any], *args, **kwargs) -> BaseStateVariables:
-        self.state_variables = self.state_variables_type(dict_, *args, **kwargs)
-        return self.state_variables
+        self.tensor = Parameter(torch.empty(*size, **kwargs), requires_grad=requires_grad)
+        return self.tensor

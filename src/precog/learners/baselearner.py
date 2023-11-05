@@ -1,8 +1,8 @@
-"""baseexpressions.py
+"""baselearner.py
 
 """
 # Package Header #
-from precog.header import *
+from ..header import *
 
 # Header #
 __author__ = __author__
@@ -20,24 +20,21 @@ from typing import Any
 from baseobjects import BaseObject
 
 # Local Packages #
+from ..models import BaseModel
 
 
 # Definitions #
-class BaseExpressions(BaseObject):
+class BaseLearner(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
-    def __init__(self, *, init=True, **kwargs) -> None:
+    def __init__(self, model: BaseModel | None = None, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.tensor: None = None
+        self.model: BaseModel | None = None
 
-        # Parent Attributes #
-        super().__init__(init=False)
-
-        # Construct #
         if init:
             self.construct()
 
-    def construct(self, *args: Any, **kwargs: Any) -> None:
+    def construct(self, model: BaseModel | None = None, *args: Any, **kwargs: Any) -> None:
         pass
 
     @abstractmethod

@@ -20,22 +20,23 @@ from typing import Any
 from baseobjects import BaseObject
 
 # Local Packages #
+from ..models import ModelBasis
 
 
 # Definitions #
 class BaseLearner(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
-    def __init__(self, *, init=True, **kwargs) -> None:
+    def __init__(self, basis: ModelBasis | None = None, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.model: None = None
+        self.basis: ModelBasis | None = None
 
         if init:
             self.construct()
 
-    def construct(self, *args: Any, **kwargs: Any) -> None:
+    def construct(self, basis: ModelBasis | None = None, *args: Any, **kwargs: Any) -> None:
         pass
 
     @abstractmethod
-    def update(self):
+    def modify(self):
         pass

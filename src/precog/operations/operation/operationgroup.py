@@ -2,7 +2,7 @@
 An Operation which contains several Operation objects to execute.
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -113,6 +113,50 @@ class OperationGroup(BaseOperation):
 
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+
+    # Operations
+    def create_operations(self, *args: Any, **kwargs) -> None:
+        """Creates the inner operations.
+
+        Args:
+            *args: The arguments for creating the inner operations.
+            **kwargs: The keyword arguments for creating the inner operations.
+        """
+
+    # IO
+    def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
+        """Links the inner operations' IO.
+
+        Args:
+            *args: The arguments for creating linking the inner operations' IO.
+            **kwargs: The keyword arguments for creating linking the inner operations' IO.
+        """
+
+    # Setup
+    def setup(
+        self,
+        *args: Any,
+        create: bool = True,
+        create_kwargs: dict[str, Any] | None = None,
+        link: bool = True,
+        link_kwargs: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Creates the inner operations and links their IO.
+
+        Args:
+            *args: The arguments for setup.
+            create: Determines if the inner operation will be created.
+            create_kwargs: The keyword arguments for creating the inner operations.
+            link: Determines if the inner IO will be linked between operations.
+            link_kwargs: The keyword arguments for creating linking the inner operations' IO.
+            **kwargs: The keyword arguments for setup.
+        """
+        if create:
+            self.create_operations(**(create_kwargs if create_kwargs is not None else {}))
+
+        if link:
+            self.link_inner_io(**(link_kwargs if link_kwargs is not None else {}))
 
     # Evaluate
     def evaluate(self, *args: Any, **kwargs: Any) -> Any:
