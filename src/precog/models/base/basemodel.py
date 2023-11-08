@@ -19,7 +19,7 @@ from typing import Any
 from baseobjects import BaseObject
 
 # Local Packages #
-from ..modelbasis import ModelBasis
+from ...basis import ModelBasis
 
 
 # Definitions #
@@ -41,6 +41,8 @@ class BaseModel(BaseObject):
         if init:
             self.construct(bases=bases, **kwargs)
 
+    # Instance Methods  #
+    # Constructors/Destructors
     def construct(self, bases: dict[str, Any] | None = None, *args: Any, **kwargs: Any) -> None:
         super().construct(**kwargs)
 

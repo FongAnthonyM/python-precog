@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ....header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -24,7 +24,7 @@ from baseobjects import BaseComponent
 
 # Definitions #
 # Classes #
-class ExpressionsBasisComponent(BaseComponent):
+class MotifsBasisComponent(BaseComponent):
     """ """
     # Magic Methods  #
     # Construction/Destruction

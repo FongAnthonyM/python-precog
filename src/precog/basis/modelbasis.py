@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ...header import *
+from ..header import *
 
 # Header #
 __author__ = __author__
@@ -13,8 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any
 
 # Third-Party Packages #
@@ -22,7 +21,7 @@ from baseobjects import BaseComposite
 import numpy as np
 
 # Local Packages #
-from ..statevariables import BaseStateVariables
+from .statevariables import BaseStateVariables
 
 
 # Definitions #
@@ -37,7 +36,8 @@ class ModelBasis(BaseComposite):
         self,
         tensor: np.ndarray | None = None,
         state_variables: Mapping[str, Any] | None = None,
-        *,
+        factor_axis: int | None = None,
+        *args,
         component_kwargs: dict[str, dict[str, Any]] | None = None,
         component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
         components: dict[str, Any] | None = None,
@@ -45,33 +45,42 @@ class ModelBasis(BaseComposite):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
+        self.factor_axis: init = -1
+
         self.tensor: Any = None
         self.state_variables: BaseStateVariables | None = None
 
         # Parent Attributes #
-        super().__init__(init=False, **kwargs)
+        super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
             self.construct(
                 tensor=tensor,
                 state_variables=state_variables,
+                factor_axis=factor_axis,
                 component_kwargs=component_kwargs,
                 component_types=component_types,
                 components=components,
                 **kwargs,
             )
 
+    # Instance Methods  #
+    # Constructors/Destructors
     def construct(
         self,
         tensor: np.ndarray | None = None,
         state_variables: Mapping[str, Any] | None = None,
+        factor_axis: int | None = None,
+        *args: Any,
         component_kwargs: dict[str, dict[str, Any]] | None = None,
         component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
         components: dict[str, Any] | None = None,
-        *args: Any,
         **kwargs: Any,
     ) -> None:
+        if factor_axis is not None:
+            self.factor_axis = factor_axis
+
         if state_variables is not None:
             self.state_variables(dict_=state_variables)
 

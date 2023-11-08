@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -20,23 +20,23 @@ from typing import Any
 from baseobjects import BaseObject
 
 # Local Packages #
-from ..models import ModelBasis
+from .baselearner import BaseLearner
 
 
 # Definitions #
-class BaseLearner(BaseObject):
+class BaseLearnerGroup(BaseObject):
     # Magic Methods  #
     # Construction/Destruction
-    def __init__(self, basis: ModelBasis | None = None, *, init=True, **kwargs) -> None:
+    def __init__(self, *, init=True, **kwargs) -> None:
         # New Attributes #
-        self.basis: ModelBasis | None = None
+        self.learners: dict[str, BaseLearner] = {}
 
         if init:
             self.construct()
 
-    def construct(self, basis: ModelBasis | None = None, *args: Any, **kwargs: Any) -> None:
+    def construct(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     @abstractmethod
-    def modify(self):
+    def update(self):
         pass

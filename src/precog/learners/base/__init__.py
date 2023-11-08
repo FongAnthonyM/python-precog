@@ -13,6 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .basestatevariables import BaseStateVariables
-from .motifsstatevariables import MotifsStateVariables
-from .expressionsstatevariables import ExpressionsStateVariables
+from .baselearner import BaseLearner
+from .basetorchlearner import BaseTorchLearner
+from .baselearnergroup import BaseLearnerGroup
+from .ensemblelearner import EnsembleLearner

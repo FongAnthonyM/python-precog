@@ -18,7 +18,7 @@ from typing import Any
 # Third-Party Packages #
 
 # Local Packages #
-from .modelbasis import ModelBasis
+from ..basis import ModelBasis
 from .base import BaseModel
 
 

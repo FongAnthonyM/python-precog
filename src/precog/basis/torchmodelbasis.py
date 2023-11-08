@@ -1,8 +1,8 @@
-"""modelbasis.py
+"""basis.py
 
 """
 # Package Header #
-from ...header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -22,7 +22,7 @@ from torch import Tensor
 from torch.nn import Parameter
 
 # Local Packages #
-from ..statevariables import BaseStateVariables
+from .statevariables import BaseStateVariables
 from .modelbasis import ModelBasis
 
 
@@ -40,6 +40,7 @@ class TorchModelBasis(ModelBasis):
         size: Iterable[int] | None = None,
         requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
+        factor_axis: int | None = None,
         *,
         component_kwargs: dict[str, dict[str, Any]] | None = None,
         component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
@@ -71,6 +72,7 @@ class TorchModelBasis(ModelBasis):
         size: Iterable[int] | None = None,
         requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
+        factor_axis: int | None = None,
         *args: Any,
         component_kwargs: dict[str, dict[str, Any]] | None = None,
         component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,

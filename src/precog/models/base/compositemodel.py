@@ -13,14 +13,13 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
 from copy import deepcopy
 from typing import Any
 
 # Third-Party Packages #
 
 # Local Packages #
-from ..modelbasis import ModelBasis
+from ...basis import ModelBasis
 from .basemodel import BaseModel
 
 

@@ -1,8 +1,8 @@
-"""baselearner.py
+"""expressionsstatevariables.py
 
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -13,17 +13,14 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
+from typing import Any
 
 # Third-Party Packages #
 
 # Local Packages #
-from .baselearner import BaseLearner
+from .basestatevariables import BaseStateVariables
 
 
 # Definitions #
-class EnsembleLearner(BaseLearner):
-
-
-    def update(self):
-        self.group.update_all()
+class ExpressionsStateVariables(BaseStateVariables):
+    default_state_variables: dict[str, Any] = {}
