@@ -27,7 +27,7 @@ from baseobjects import BaseObject
 class IOMap(NamedTuple):
     """The Map and information of an IO object."""
     name: str
-    type: type["BaseIO"] | None = None
+    type: Optional[type] = None
     object: Optional["BaseIO"] = None
     links: dict[str, "IOInformation"] | None = None
 

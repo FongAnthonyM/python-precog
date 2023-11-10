@@ -83,6 +83,8 @@ class CDFSStreamer(ProxyArrayStreamer):
 
         if cdfs is not None:
             self.cdfs = cdfs
+            if cdfs.data is None:
+                cdfs.open(mode="r", load=True)
             proxy_array = cdfs.data
 
         # Construct Parent #

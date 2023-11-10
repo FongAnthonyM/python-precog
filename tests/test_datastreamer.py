@@ -23,6 +23,7 @@ import timeit
 import pytest
 import numpy as np
 from ucsfbids import Subject
+from h5py import Dataset
 
 # Local Packages #
 from src.precog.operations import CDFSStreamer
@@ -56,19 +57,24 @@ class TestCDFSStreamer(ClassTest):
     subject_id = "EC0213"
 
     def test_evaluate_stream(self):
+        from xltektools.xltekucsfbids import IEEGXLTEK
+        start = datetime.datetime(1970, 1, 6, 0, 0, tzinfo=datetime.timezone.utc)
+        stop = datetime.datetime(1970, 1, 6, 1, 0, tzinfo=datetime.timezone.utc)
+
         bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
         session = bids_subject.sessions["clinicalintracranial"]
-        session.modalities["ieeg"].require_cdfs()
-        cdfs = session.modalities["ieeg"].cdfs
+        cdfs = session.modalities["ieeg"].require_cdfs()
 
         streamer = CDFSStreamer(cdfs=cdfs)
-        streamer.setup()  # put kwargs in here
+        streamer.setup(start=start, stop=stop, step=0.5, approx=True, tails=True)
 
-        out = streamer.evaluate()
+        outs = [streamer.evaluate() for i in range(120)]
 
         assert True
 
 
 # Main #
 if __name__ == "__main__":
-    pytest.main(["-v", "-s"])
+    # pytest.main(["-v", "-s"])
+    t = TestCDFSStreamer()
+    t.test_evaluate_stream()
