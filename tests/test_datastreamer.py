@@ -54,7 +54,7 @@ class ClassTest:
 
 class TestCDFSStreamer(ClassTest):
     subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
-    subject_id = "EC0213"
+    subject_id = "EC0212"
 
     def test_evaluate_stream(self):
         from xltektools.xltekucsfbids import IEEGXLTEK
@@ -66,9 +66,9 @@ class TestCDFSStreamer(ClassTest):
         cdfs = session.modalities["ieeg"].require_cdfs()
 
         streamer = CDFSStreamer(cdfs=cdfs)
-        streamer.setup(start=start, stop=stop, step=0.5, approx=True, tails=True)
+        streamer.setup(start=start, stop=stop, step=10, approx=True, tails=True)
 
-        outs = [streamer.evaluate() for i in range(120)]
+        outs = [streamer.evaluate() for i in range(360)]
 
         assert True
 

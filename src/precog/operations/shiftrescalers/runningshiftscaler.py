@@ -34,7 +34,7 @@ class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("ss_data",)
     default_shift_rescale: str = "shift_rescale_mean_std"
-    default_forget: str | None = None
+    default_forget: str = "exponential_forget"
 
     # Magic Methods #
     # Construction/Destruction

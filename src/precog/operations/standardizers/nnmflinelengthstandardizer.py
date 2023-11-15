@@ -195,6 +195,6 @@ class NNMFLineLengthStandardizer(OperationGroup):
             axis=axis,
         )
 
-        create_kwargs = ({} if create_kwargs is None else create_kwargs) | new_create_kwargs
+        create_kwargs = new_create_kwargs | ({} if create_kwargs is None else create_kwargs)
 
         super().setup(create=create, create_kwargs=create_kwargs, link=link, link_kwargs=link_kwargs, **kwargs)
