@@ -17,6 +17,7 @@ from abc import abstractmethod
 from typing import Any, Callable
 
 # Third-Party Packages #
+import numpy as np
 
 # Local Packages #
 from ..operation import OperationGroup
@@ -40,6 +41,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -64,6 +67,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
                 window_type=window_type,
                 shift_scale=shift_scale,
                 forget_factor=forget_factor,
+                mean=mean,
+                variance=variance,
                 non_negative=non_negative,
                 non_negative_kwargs=non_negative_kwargs,
                 axis=axis,
@@ -82,6 +87,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -107,6 +114,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
             window_type=window_type,
             shift_scale=shift_scale,
             forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
             axis=axis,
@@ -123,6 +132,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -140,6 +151,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         self.operations["shift_scale"] = RunningShiftScaler(
             shift_rescale=shift_scale,
             forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
             axis=axis,
         )
 
@@ -173,6 +186,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -190,6 +205,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
             window_type=window_type,
             shift_scale=shift_scale,
             forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
             axis=axis,

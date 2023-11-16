@@ -110,7 +110,7 @@ class TestNNMFLineLengthStandardizer(ClassTest):
     def test_random_execute(self):
         samples = 10240
         channels = 256
-        t_data = np.random.rand(samples, channels)
+        t_data = np.random.normal(loc=7, scale=3, size=(samples, channels))
 
         standardizer = NNMFLineLengthStandardizer(
             forget_factor=10**-6,

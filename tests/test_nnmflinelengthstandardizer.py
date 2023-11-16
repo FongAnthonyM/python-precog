@@ -55,10 +55,11 @@ class TestNNMFLineLengthStandardizer(ClassTest):
     def test_random_execute(self):
         samples = 102400
         channels = 512
-        t_data = np.random.rand(samples, channels)
+        t_data = np.random.normal(loc=7, scale=3, size=(samples, channels))
 
         standardizer = NNMFLineLengthStandardizer(
             forget_factor=10**-6,
+            mean=np.expand_dims(t_data[0, :], 0)
         )
         out = standardizer.evaluate(data=t_data)
 

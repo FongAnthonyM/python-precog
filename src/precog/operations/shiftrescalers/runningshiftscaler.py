@@ -33,7 +33,7 @@ blank_arg = object()
 class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("ss_data",)
-    default_shift_rescale: str = "shift_rescale_mean_std"
+    default_shift_rescale: str = "shift_rescale_zscore"
     default_forget: str = "exponential_forget"
 
     # Magic Methods #
@@ -42,6 +42,8 @@ class RunningShiftScaler(BaseOperation):
         self,
         shift_rescale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -56,8 +58,8 @@ class RunningShiftScaler(BaseOperation):
         self.previous_mean: np.ndarray | None = None
         self.previous_mean_fill_value: float | int = 0
 
-        self.previous_std: np.ndarray | None = None
-        self.previous_std_fill_value: float | int = 1
+        self.previous_variance: np.ndarray | None = None
+        self.previous_variance_fill_value: float | int = 0
 
         self.previous_count: int = 0
 
@@ -71,8 +73,18 @@ class RunningShiftScaler(BaseOperation):
 
         # Construct #
         if init:
-            self.construct(shift_rescale, forget_factor, axis, *args, init_io=init_io, setup_kwargs=setup_kwargs,
-                           sets_up=sets_up, **kwargs)
+            self.construct(
+                shift_rescale,
+                forget_factor,
+                mean,
+                variance,
+                axis,
+                *args,
+                init_io=init_io,
+                setup_kwargs=setup_kwargs,
+                sets_up=sets_up,
+                **kwargs,
+            )
 
     @property
     def forget_factor(self) -> float:
@@ -93,6 +105,8 @@ class RunningShiftScaler(BaseOperation):
         self,
         shift_rescale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -118,6 +132,12 @@ class RunningShiftScaler(BaseOperation):
         if forget_factor is not blank_arg:
             self.forget_factor = forget_factor
 
+        if mean is not None:
+            self.previous_mean = mean
+
+        if variance is not None:
+            self.previous_variance = variance
+
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
@@ -128,10 +148,10 @@ class RunningShiftScaler(BaseOperation):
         return self.previous_mean
 
     def create_previous_std(self, shape, dtype):
-        self.previous_std = np.expand_dims(np.ones(shape, dtype), self.axis)
-        if self.previous_std_fill_value != 1:
-            self.previous_std.fill(self.previous_std_fill_value)
-        return self.previous_std
+        self.previous_variance = np.expand_dims(np.ones(shape, dtype), self.axis)
+        if self.previous_variance_fill_value != 1:
+            self.previous_variance.fill(self.previous_variance_fill_value)
+        return self.previous_variance
 
     # Setup
     def setup(self, previous_sum: np.ndarray | None = None, *args: Any, **kwargs: Any) -> None:
@@ -182,21 +202,34 @@ class RunningShiftScaler(BaseOperation):
         shifted_data = data - new_mean
         return shifted_data
 
-    def shift_rescale_mean_std(self, data) -> np.ndarray:
+    def shift_rescale_zscore(self, data) -> np.ndarray:
         scaled_data = np.empty_like(data)
         slices = [slice(None)] * len(data.shape)
         for i in range(data.shape[self.axis]):
             slices[self.axis] = i
             t_slices = tuple(slices)
             forget_factor = self.forget(index=i)
+            new_data = data[t_slices]
 
-            # This standardizes the data using values up to (but not including) the current index i
-            shifted_data = data[t_slices] - self.previous_mean
-            scaled_data[t_slices] = shifted_data / self.previous_std
+            # Shift Data by the Previous Mean
+            shifted_data = new_data - self.previous_mean
 
-            # This updates the statistics using values up to (and including) the current index i
-            self.previous_mean = self.previous_mean + shifted_data * forget_factor
-            self.previous_std = forget_factor * (self.previous_std + (1-forget_factor) * shifted_data**2)
+            # Calculate Z-score
+            scaled_data[t_slices] = shifted_data / np.sqrt(self.previous_variance)
+
+            # Update Mean
+            self.previous_mean = (1 - forget_factor) * self.previous_mean + forget_factor * new_data
+
+            # Update Variance
+            # delta_variance = shifted_data * (new_data - self.previous_mean) - self.previous_variance
+            # self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
+
+            # delta_variance = shifted_data * (new_data - self.previous_mean)
+            # self.previous_variance = (1 - 2 * forget_factor) * self.previous_variance + delta_variance
+
+            delta_variance = shifted_data * (new_data - self.previous_mean)
+            self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
+
         self.previous_count += data.shape[-1]
         return scaled_data
 
@@ -212,10 +245,10 @@ class RunningShiftScaler(BaseOperation):
             The result of the evaluation.
         """
         if self.previous_mean is None:
-            shape = list(data.shape)
-            shape.pop(self.axis)
-            self.create_previous_mean(shape, data.dtype)
-        if self.previous_std is None:
+            shape = [slice(None)] * len(data.shape)
+            shape[self.axis] = 0
+            self.previous_mean = np.expand_dims(data[tuple(shape)], self.axis)
+        if self.previous_variance is None:
             shape = list(data.shape)
             shape.pop(self.axis)
             self.create_previous_std(shape, data.dtype)
