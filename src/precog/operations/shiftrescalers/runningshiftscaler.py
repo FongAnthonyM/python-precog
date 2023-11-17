@@ -33,7 +33,7 @@ blank_arg = object()
 class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("ss_data",)
-    default_shift_rescale: str = "shift_rescale_zscore"
+    default_shift_rescale: str = "shift_rescale_modified_zscore"
     default_forget: str = "exponential_forget"
 
     # Magic Methods #
@@ -44,6 +44,7 @@ class RunningShiftScaler(BaseOperation):
         forget_factor: float | None | object = blank_arg,
         mean: np.ndarray | None = None,
         variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -60,6 +61,8 @@ class RunningShiftScaler(BaseOperation):
 
         self.previous_variance: np.ndarray | None = None
         self.previous_variance_fill_value: float | int = 0
+
+        self.threshold: int | float = 10 ** 12
 
         self.previous_count: int = 0
 
@@ -78,6 +81,7 @@ class RunningShiftScaler(BaseOperation):
                 forget_factor,
                 mean,
                 variance,
+                threshold,
                 axis,
                 *args,
                 init_io=init_io,
@@ -107,6 +111,7 @@ class RunningShiftScaler(BaseOperation):
         forget_factor: float | None | object = blank_arg,
         mean: np.ndarray | None = None,
         variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -137,6 +142,9 @@ class RunningShiftScaler(BaseOperation):
 
         if variance is not None:
             self.previous_variance = variance
+
+        if threshold is not None:
+            self.threshold = threshold
 
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
@@ -221,13 +229,36 @@ class RunningShiftScaler(BaseOperation):
             self.previous_mean = (1 - forget_factor) * self.previous_mean + forget_factor * new_data
 
             # Update Variance
-            # delta_variance = shifted_data * (new_data - self.previous_mean) - self.previous_variance
-            # self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
-
-            # delta_variance = shifted_data * (new_data - self.previous_mean)
-            # self.previous_variance = (1 - 2 * forget_factor) * self.previous_variance + delta_variance
-
             delta_variance = shifted_data * (new_data - self.previous_mean)
+            self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
+
+        self.previous_count += data.shape[-1]
+        return scaled_data
+
+    def shift_rescale_modified_zscore(self, data) -> np.ndarray:
+        scaled_data = np.empty_like(data)
+        slices = [slice(None)] * len(data.shape)
+        for i in range(data.shape[self.axis]):
+            slices[self.axis] = i
+            t_slices = tuple(slices)
+            forget_factor = self.forget(index=i)
+            new_data = data[t_slices]
+
+            # Get the Deviation from the Previous Mean
+            data_deviation = new_data - self.previous_mean
+
+            # Calculate Modified Z-score
+            data_std = np.sqrt(self.previous_variance)
+            modified_zscore = self.threshold * np.tanh(data_deviation / (self.threshold * data_std))
+            modified_deviation = modified_zscore * data_std
+            modified_data = modified_deviation + self.previous_mean
+            scaled_data[t_slices] = modified_zscore
+
+            # Update Mean
+            self.previous_mean = (1 - forget_factor) * self.previous_mean + forget_factor * modified_data
+
+            # Update Variance
+            delta_variance = modified_deviation * (modified_data - self.previous_mean)
             self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
 
         self.previous_count += data.shape[-1]
