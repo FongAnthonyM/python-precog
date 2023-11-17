@@ -249,10 +249,10 @@ class RunningShiftScaler(BaseOperation):
 
             # Calculate Modified Z-score
             data_std = np.sqrt(self.previous_variance)
-            modified_zscore = self.threshold * np.tanh(data_deviation / (self.threshold * data_std))
-            modified_deviation = modified_zscore * data_std
+            modified_zscore = np.tanh(data_deviation / (self.threshold * data_std))
+            modified_deviation = self.threshold * modified_zscore * data_std
             modified_data = modified_deviation + self.previous_mean
-            scaled_data[t_slices] = modified_zscore / self.threshold
+            scaled_data[t_slices] = modified_zscore
 
             # Update Mean
             self.previous_mean = (1 - forget_factor) * self.previous_mean + forget_factor * modified_data
