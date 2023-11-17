@@ -59,7 +59,8 @@ class TestNNMFLineLengthStandardizer(ClassTest):
 
         standardizer = NNMFLineLengthStandardizer(
             forget_factor=10**-6,
-            mean=np.expand_dims(t_data[0, :], 0)
+            mean=np.expand_dims(t_data[0, :], 0),
+            threshold=1,
         )
         out = standardizer.evaluate(data=t_data)
 
