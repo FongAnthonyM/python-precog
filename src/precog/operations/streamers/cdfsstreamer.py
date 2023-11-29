@@ -19,7 +19,7 @@ from typing import Any
 from cdfs import CDFS
 
 # Local Packages #
-from .streamers import ProxyArrayStreamer
+from .proxyarraystreamer import ProxyArrayStreamer
 
 
 # Definitions #
