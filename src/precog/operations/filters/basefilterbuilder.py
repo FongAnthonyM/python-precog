@@ -81,7 +81,15 @@ class BaseFilterBuilder(BaseObject):
     # Create Filters
     @abstractmethod
     def create_filters_iter(self, sample_rate: float | None = None, **kwargs: Any) -> Generator[Filter, None, None]:
-        pass
+        """An abstract method for creating a Generator of Filters.
+
+        Args:
+            sample_rate: The sample rate of the filters to create.
+            **kwargs: The keyword arguments to create filters
+
+        Returns:
+            The Filters created.
+        """
 
     def create_filters(self, sample_rate: float | None = None, **kwargs: Any) -> tuple[Filter, ...]:
         return tuple(self.create_filters_iter(sample_rate=sample_rate, **kwargs))

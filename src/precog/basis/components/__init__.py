@@ -13,10 +13,5 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .operation import *
-from .features import *
-from .constraints import *
-from .filters import *
-from .shiftrescalers import *
-from .standardizers import *
-from .streamers import *
+from .motifsbasiscomponent import MotifsBasisComponent
+from .expressionsbasiscomponent import ExpressionsBasisComponent

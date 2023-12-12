@@ -1,8 +1,8 @@
-""" baseoperation.py
+""" nnmflinelengthstandardizer.py
 An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -17,13 +17,13 @@ from abc import abstractmethod
 from typing import Any, Callable
 
 # Third-Party Packages #
-from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
+import numpy as np
 
 # Local Packages #
 from ..operation import OperationGroup
-from ..features import LineLengthOperation
-from ..shifters import RunningShiftScaler, blank_arg
-from ..constraints import NonNegativeOperation
+from ..features import LineLength
+from ..shiftrescalers import RunningShiftScaler, blank_arg
+from ..constraints import NonNegative
 
 
 # Definitions #
@@ -41,6 +41,9 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -65,6 +68,9 @@ class NNMFLineLengthStandardizer(OperationGroup):
                 window_type=window_type,
                 shift_scale=shift_scale,
                 forget_factor=forget_factor,
+                mean=mean,
+                variance=variance,
+                threshold=threshold,
                 non_negative=non_negative,
                 non_negative_kwargs=non_negative_kwargs,
                 axis=axis,
@@ -83,6 +89,9 @@ class NNMFLineLengthStandardizer(OperationGroup):
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
@@ -101,55 +110,69 @@ class NNMFLineLengthStandardizer(OperationGroup):
             setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
-        new_setup_kwargs = dict(
+        setup_kwargs = {} if setup_kwargs is None else setup_kwargs
+        setup_kwargs["create_kwargs"] = setup_kwargs.get("create_kwargs", {}) | dict(
             squared_estimator=squared_estimator,
             window_len=window_len,
             window_type=window_type,
             shift_scale=shift_scale,
             forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
+            threshold=threshold,
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
             axis=axis,
         )
 
-        setup_kwargs = ({} if setup_kwargs is None else setup_kwargs) | new_setup_kwargs
-
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
-    # Setup
-    def setup(
+    # Operations
+    def create_operations(
         self,
         squared_estimator: bool | None = None,
         window_len: int | None = None,
         window_type: Callable | None = None,
         shift_scale: str | None = None,
         forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """A method for setting up the object before it runs operation."""
         # Create Operations
-        self.operations["line_length"] = line_length = LineLengthOperation(
+        self.operations["line_length"] = LineLength(
             squared_estimator=squared_estimator,
             window_len=window_len,
             window_type=window_type,
             axis=axis,
         )
 
-        self.operations["shift_scale"] = shift_scaler = RunningShiftScaler(
+        self.operations["shift_scale"] = RunningShiftScaler(
             shift_rescale=shift_scale,
             forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
+            threshold=threshold,
             axis=axis,
         )
 
-        self.operations["non_negative"] = non_negative_op = NonNegativeOperation(
+        self.operations["non_negative"] = NonNegative(
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
         )
+
+    # IO
+    def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
+        # Get Operations
+        line_length = self.operations["line_length"]
+        shift_scaler = self.operations["shift_scale"]
+        non_negative_op = self.operations["non_negative"]
 
         # Set Input
         self.inputs["data"] = line_length.inputs["data"]
@@ -160,3 +183,43 @@ class NNMFLineLengthStandardizer(OperationGroup):
 
         # Set Output
         self.outputs["features"] = non_negative_op.outputs["nn_data"]
+
+    # Setup
+    def setup(
+        self,
+        squared_estimator: bool | None = None,
+        window_len: int | None = None,
+        window_type: Callable | None = None,
+        shift_scale: str | None = None,
+        forget_factor: float | None | object = blank_arg,
+        mean: np.ndarray | None = None,
+        variance: np.ndarray | None = None,
+        threshold: int | float | None = None,
+        non_negative: str | None = None,
+        non_negative_kwargs: dict[str, Any] | None = None,
+        axis: int | None = None,
+        *args: Any,
+        create: bool = True,
+        create_kwargs: dict[str, Any] | None = None,
+        link: bool = True,
+        link_kwargs: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """A method for setting up the object before it runs operation."""
+        new_create_kwargs = dict(
+            squared_estimator=squared_estimator,
+            window_len=window_len,
+            window_type=window_type,
+            shift_scale=shift_scale,
+            forget_factor=forget_factor,
+            mean=mean,
+            variance=variance,
+            threshold=threshold,
+            non_negative=non_negative,
+            non_negative_kwargs=non_negative_kwargs,
+            axis=axis,
+        )
+
+        create_kwargs = new_create_kwargs | ({} if create_kwargs is None else create_kwargs)
+
+        super().setup(create=create, create_kwargs=create_kwargs, link=link, link_kwargs=link_kwargs, **kwargs)

@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ..header import *
 
 # Header #
 __author__ = __author__
@@ -13,5 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .basefeature import BaseFeature
-from .linelength import LineLength
+from .base import *
+from .nnmfmodel import NNMFModel
+from .oasismodel import OASISModel
+from .nnmfoasismodel import NNMFOASISModel

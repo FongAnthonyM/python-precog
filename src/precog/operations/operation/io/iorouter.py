@@ -16,17 +16,17 @@ __email__ = __email__
 from typing import Any
 
 # Third-Party Packages #
-from baseobjects import BaseDict
+from baseobjects.collections import OrderableDict
 
 # Local Packages #
-from .baseio import BaseIO
+from .baseio import IOMap, BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
 from .iocontainer import IOContainer
 
 
 # Definitions #
 # Classes #
-class IORouter(BaseDict, BaseIOMultiplexer):
+class IORouter(OrderableDict, BaseIOMultiplexer):
     """An IO object which maps inputs to outputs.
 
     The default functionality is put a single output into multiple inputs.
@@ -133,3 +133,13 @@ class IORouter(BaseDict, BaseIOMultiplexer):
         """
         for io_object in self.data.values():
             io_object.put(*args, **kwargs)
+
+    # IO Mapping
+    def get_links(self) -> dict[str, IOMap] | None:
+        """Gets the links of this IO object.
+
+       Returns:
+           The links of this IO object.
+       """
+        return {n: m.generate_io_map() for n, m in self.data}
+
