@@ -98,17 +98,19 @@ class Recenter(BaseOperation):
     def find_peak(self, data: np.ndarray):
         return data.argmax()
 
-    def find_center_mass(self: np.ndarray):
-        pass
+    def find_center_mass(self, data: np.ndarray):
+        means = np.moveaxis(data, self.axis, 0).mean(axis=-1)
+        center = ((means / means.sum()) * range(len(means))).sum()
+        return 0 if np.isnan(center) else int(center)
 
     # Recenter
     def roll(self, data: np.ndarray):
-        return np.roll(data, data.shape[self.axis] // 2 - self.find_center()[self.axis], axis=self.axis)
+        return np.roll(data, data.shape[self.axis] // 2 - self.find_center(), axis=self.axis)
 
     def reflect_roll(self, data: np.ndarray):
         slices = [slice(s) for s in data.shape]
         axis_len = data.shape[self.axis]
-        shift = axis_len // 2 - self.find_center()[self.axis]
+        shift = axis_len // 2 - self.find_center()
         width = [(0, 0)] * len(data.shape)
         width[self.axis] = (shift, 0) if shift > 0 else (0, -shift)
         if shift > 0:
