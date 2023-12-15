@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -71,3 +71,27 @@ class BaseBasisModifier(BaseObject):
 
         # Construct Parent #
         super().construct(*args, **kwargs)
+
+    @abstractmethod
+    def modify(self, *args: Any, **kwargs: Any) -> Any:
+        """Modifies a given the basis with the given parameters.
+
+        Args:
+            *args: The arguments for modify the basis.
+            **kwargs: The keyword arguments for modify the basis.
+
+        Returns:
+            Any: The updated object.
+        """
+
+    @abstractmethod
+    def update(self, *args: Any, **kwargs: Any) -> Any:
+        """Updates the contained basis with the given parameters.
+
+        Args:
+            *args: The arguments for updating the basis.
+            **kwargs: The keyword arguments for updating the basis.
+
+        Returns:
+            Any: The updated object.
+        """

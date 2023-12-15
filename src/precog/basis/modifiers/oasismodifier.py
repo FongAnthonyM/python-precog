@@ -1,4 +1,4 @@
-"""basebasismodifier.py
+"""oasismodifier.py
 
 """
 # Package Header #
@@ -40,7 +40,7 @@ class OASISModifier(BaseBasisModifier):
         "optimize_g_len": None,  # int
     }
 
-    @ classmethod
+    @classmethod
     def create_state_variables(cls, factor_state_variables, **kwargs):
         factor_state_variables = [cls.default_factor_state_variables | k for k in factor_state_variables]
         super().create_state_variables(factor_state_variables=factor_state_variables, **kwargs)

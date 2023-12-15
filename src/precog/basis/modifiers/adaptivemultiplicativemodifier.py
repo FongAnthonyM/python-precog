@@ -17,7 +17,6 @@ from abc import abstractmethod
 from typing import Any, Callable, Optional
 
 # Third-Party Packages #
-
 import torch
 from torch import Tensor
 from torch.optim import Optimizer
@@ -225,3 +224,60 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         self.state_variables["step"] = step + 1 
         
         return None
+
+    def modify(
+        self,
+        closure: Optional[Callable] = None,
+        module: Module | None = None,
+        x: Tensor | None = None,
+        theta: Tensor | None = None,
+        beta: int | None = None,
+        penalty: Tensor | None = None,
+        pos: Tensor | None = None,
+        neg: Tensor | None = None,
+        step: int | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        temp_module = self.module
+        if module is not None:
+            self.module = module
+        self.step(
+            closure=closure,
+            x=x,
+            theta=theta,
+            beta=beta,
+            penalty=penalty,
+            pos=pos,
+            neg=neg,
+            step=step,
+            *args,
+            **kwargs,
+        )
+        self.module = temp_module
+
+    def update(
+        self,
+        closure: Optional[Callable] = None,
+        x: Tensor | None = None,
+        theta: Tensor | None = None,
+        beta: int | None = None,
+        penalty: Tensor | None = None,
+        pos: Tensor | None = None,
+        neg: Tensor | None = None,
+        step: int | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        self.step(
+            closure=closure,
+            x=x,
+            theta=theta,
+            beta=beta,
+            penalty=penalty,
+            pos=pos,
+            neg=neg,
+            step=step,
+            *args,
+            **kwargs,
+        )

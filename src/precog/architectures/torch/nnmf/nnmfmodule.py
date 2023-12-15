@@ -1,8 +1,8 @@
-"""nnmflearner.py
+"""nnmfmodule.py
 
 """
 # Package Header #
-from ...header import *
+from ....header import *
 
 # Header #
 __author__ = __author__
@@ -16,19 +16,16 @@ __email__ = __email__
 from typing import Any
 
 # Third-Party Packages #
-import torch
 from torch import Tensor
 from torch.nn.functional import linear
-from torch.nn import Parameter
 
 # Local Packages #
-from .basennmflearner import BaseNNMFLearner
+from .basennmfmodule import BaseNNMFModule
 
 
 # Definitions #
-class NNMFLearner(BaseNNMFLearner):
+class NNMFModule(BaseNNMFModule):
     # Instance Methods  #
     def reconstruct(self, *args, **kwargs) -> Tensor:
         """Creates a reconstruction by taking the product of W and H."""
-        return linear(self.H.tensor, self.W.tensor)
-
+        return linear(self.H, self.W)

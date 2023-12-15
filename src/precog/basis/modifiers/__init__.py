@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -13,3 +13,6 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
+from .basebasismodifier import BaseBasisModifier
+from .adaptivemultiplicativemodifier import AdaptiveMultiplicativeModifier
+from .oasismodifier import OASISModifier
