@@ -14,47 +14,126 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 import torch
-from torch.nn import Module, Parameter
+from torch.nn import Parameter
 from torch import Tensor
 
 # Local Packages #
+from ....basis import ModelBasis
+from ..basemodulearchitecture import BaseModuleArchitecture
 
 
 # Definitions #
-class BaseNNMFModule(Module):
-    # Attributes #
-    W: Parameter | None
-    H: Parameter | None
+class BaseNNMFModule(BaseModuleArchitecture):
+    # Class Attributes #
+    default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {"H": (), "W": ()}
+    
+    # Properties #
+    @property
+    def W(self) -> ModelBasis | None:
+        return self.bases.get("W", None)
+    
+    @W.setter
+    def W(self, value: ModelBasis) -> None:
+        self.bases["W"] = value
+
+    @property
+    def H(self) -> ModelBasis | None:
+        return self.bases.get("H", None)
+
+    @H.setter
+    def H(self, value: ModelBasis) -> None:
+        self.bases["H"] = value
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        W: Parameter | dict[str, Any] | None = None,
-        H: Parameter | dict[str, Any] | None = None,
+        W: ModelBasis | Parameter | dict[str, Any] | None = None,
+        H: ModelBasis | Parameter | dict[str, Any] | None = None,
         *args: Any,
+        bases: dict[str, ModelBasis] | None = None,
+        state_variables: dict[str, Any] | None = None,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        init: bool = True,
         **kwargs: Any,
     ) -> None:
         # Parent Attributes #
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, init=False, **kwargs)
 
-        # Attributes #
-        self.W = Parameter(torch.empty(**W)) if isinstance(W, dict) else W
-        self.H = Parameter(torch.empty(**H)) if isinstance(H, dict) else H
+        # Construct #
+        if init:
+            self.construct(
+                W=W,
+                H=H,
+                bases=bases,
+                state_variables=state_variables,
+                create_defaults=create_defaults,
+                bases_kwargs=bases_kwargs,
+                **kwargs,
+            )
 
     # Instance Methods  #
+    # Constructors/Destructors
+    def construct(
+        self,
+        W: ModelBasis | Parameter | dict[str, Any] | None = None,
+        H: ModelBasis | Parameter | dict[str, Any] | None = None,
+        *args: Any,
+        bases: dict[str, ModelBasis] | None = None,
+        state_variables: dict[str, Any] | None = None,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        # New Setup #
+        if bases_kwargs is None:
+            bases_kwargs = {}
+            if isinstance(W, dict):
+                bases_kwargs["W"] = W
+            if isinstance(H, dict):
+                bases_kwargs["H"] = H
+            if not bases_kwargs:
+                bases_kwargs = None
+        else:
+            if "W" not in bases_kwargs and isinstance(W, dict):
+                bases_kwargs["W"] = W
+            
+            if "H" not in bases_kwargs and isinstance(H, dict):
+                bases_kwargs["H"] = H
+        
+        # Construct Parent #
+        super().construct(
+                bases=bases,
+                state_variables=state_variables,
+                create_defaults=create_defaults,
+                bases_kwargs=bases_kwargs,
+                **kwargs,
+            )
+
+        # Construct New #
+        if isinstance(W, ModelBasis):
+            self.bases["W"] = W
+        elif isinstance(W, Parameter):
+            self.bases["W"].tensor = W
+    
+        if isinstance(H, ModelBasis):
+            self.bases["H"] = H
+        elif isinstance(H, Parameter):
+            self.bases["H"].tensor = H
+    
     # Module
     @abstractmethod
     def reconstruct(self, *args, **kwargs) -> Tensor:
         """An abstract method which creates a reconstruction using W and H."""
         raise NotImplementedError
 
-    def forward(self, W: Parameter | None = None, H: Parameter | None = None, *args, **kwargs) -> Tensor:
-        """The evaluation of the model which is reconstruction using W and H
+    def forward(self, W: ModelBasis | None = None, H: ModelBasis | None = None, *args, **kwargs) -> Tensor:
+        """The evaluation of the model which is the reconstruction using W and H
 
         Args:
             H: input activation tensor H.
@@ -64,8 +143,8 @@ class BaseNNMFModule(Module):
             The reconstructed tensor.
         """
         if H is not None:
-            self.H = H
+            self.bases["H"] = H
         if W is not None:
-            self.W = W
+            self.bases["W"] = W
 
         return self.reconstruct(*args, **kwargs)

@@ -16,29 +16,31 @@ __email__ = __email__
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects import BaseObject
+from baseobjects import BaseObject, BaseComponent
 
 # Local Packages #
-from ...basis import ModelBasis
+from ...basis import ModelBasis, BasisContainer
+from ...architectures import BaseArchitecture
+from ...trainers import BaseTrainer
 
 
 # Definitions #
 # Classes #
 class BaseModel(BaseObject):
     # Class Attributes #
-    default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {}
-    default_architecture: ClassVar[tuple[type, dict[str, Any]]] = ()
-    default_trainer: ClassVar[tuple[type, dict[str]]] = ()
-    default_submodels: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {}
+    _bases_types: ClassVar[tuple[str]] = ("local", "architecture", "trainer", "submodels")
+    default_bases: ClassVar[dict[str, dict[str, dict | tuple[type, dict[str, Any]]]]] = {}
+    default_state_variables: ClassVar[dict[str, Any]] = {}
+    default_architecture: ClassVar[tuple[type[BaseArchitecture], dict[str, Any]]] = ()
+    default_trainer: ClassVar[tuple[type[BaseTrainer], dict[str]]] = ()
+    default_submodels: ClassVar[dict[str, tuple[type["BaseModel"], dict[str, Any]]]] = {}
 
     # Attributes #
-    architecture_bases: set[str] = set()
-    trainer_bases: set[str] = set()
-
-    _bases: dict[str, ModelBasis]
+    local_state_variables:dict[str, Any]
+    local_bases: dict[str, ModelBasis]
     _atoms: dict[str, Any]
-    architecture: Any = None
-    trainer: Any = None
+    architecture: BaseArchitecture | None = None
+    trainer: BaseTrainer | None = None
 
     submodels: dict[str, "BaseModel"]
 
@@ -56,6 +58,7 @@ class BaseModel(BaseObject):
     def __init__(
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
+        state_variables: dict[str, Any] | None = None,
         architecture: Any = None,
         trainer: Any = None,
         submodels: dict[str, "BaseModel"] | None = None,
@@ -64,10 +67,8 @@ class BaseModel(BaseObject):
         **kwargs,
     ) -> None:
         # Attributes #
-        self.architecture_bases = self.architecture_bases.copy()
-        self.trainer_bases = self.trainer_bases.copy()
-
-        self._bases = {}
+        self.local_state_variables = {}
+        self.local_bases = {}
         self._atoms = {}
 
         self.submodels = {}
@@ -84,47 +85,73 @@ class BaseModel(BaseObject):
     def construct(
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
+        state_variables: dict[str, Any] | None = None,
         architecture: Any = None,
         trainer: Any = None,
         submodels: dict[str, "BaseModel"] | None = None,
-        init: bool = True,
         **kwargs,
     ) -> None:
         super().construct(**kwargs)
 
-        self.construct_default_bases()
-        if bases is not None:
-            self.bases.update(bases)
+        # State Variables
+        if state_variables is None:
+            state_variables = self.default_state_variables
+        else:
+            state_variables = {
+                n: self.default_state_variables.get(n, {}) | state_variables.get(n, {}) for n in self._bases_types
+            }
+        
+        if (local_state_variables := state_variables.get("local", None)) is not None:
+            self.local_state_variables.update(local_state_variables)
+        
+        # Bases
+        d_bases = self.construct_default_bases()
+        bases = d_bases if bases is None else {n: d_bases.get(n, {}) | bases.get(n, {}) for n in self._bases_types}
 
+        if (local_bases := bases.get("local", None)) is not None:
+            self.local_bases.update(local_bases)
+        
+        # Contained Objects
         if architecture is not None:
             self.architecture = architecture
         else:
-            self.construct_default_architecture()
-
-        if self.architecture is not None:
-            self.set_architecture_bases()
+            self.construct_default_architecture(
+                bases=bases.get("architecture", None), 
+                state_variables=state_variables.get("architecture", None),
+            )
 
         if trainer is not None:
             self.trainer = trainer
         else:
-            self.construct_default_trainer()
-
-        if self.trainer is not None:
-            self.set_trainer_bases()
+            self.construct_default_trainer(
+                bases=bases.get("trainer", None), 
+                state_variables=state_variables.get("trainer", None),
+            )
 
         self.construct_default_submodels()
         if submodels is not None:
             self.submodels.update(submodels)
 
     # Bases
-    def construct_default_bases(self) -> None:
-        self._bases.update({n: t(**k) for n, (t, k) in self.default_bases.items()})
+    def create_bases(self, bases: dict[str, dict] | tuple[type, dict[str, Any]]) -> dict[str, dict | ModelBasis]:
+        if isinstance(bases, dict):
+            return {n: self.create_bases(b) for n, b in bases.items()}
+        else:
+            return bases[0](**bases[1])
+
+    def construct_default_bases(self) -> dict[str, dict]:
+        return self.create_bases(self.default_bases)
 
     def get_submodel_bases(self) -> dict[str, Any]:
         return {name: submodel.bases for name, submodel in self.submodels.items()}
 
     def get_bases(self) -> dict[str, Any]:
-        return self._bases | self.get_submodel_bases()
+        return {
+            "local": self.local_bases,
+            "architecture": self.architecture.bases,
+            "trainer": self.trainer.bases,
+            "submodels": self.get_submodel_bases(),
+        }
 
     # Atoms
     def get_submodels_atoms(self) -> dict[str, Any]:
@@ -134,20 +161,12 @@ class BaseModel(BaseObject):
         return self._atoms | self.get_submodels_atoms()
     
     # Architecture
-    def construct_default_architecture(self) -> None:
-        self.architecture = self.default_architecture[0](**self.default_architecture[1])
-
-    def set_architecture_bases(self) -> None:
-        for name in self.architecture_bases:
-            self.architecture.set_basis(name, self._bases[name])
+    def construct_default_architecture(self, **kwargs) -> None:
+        self.architecture = self.default_architecture[0](**(self.default_architecture[1] | kwargs))
 
     # Trainer
-    def construct_default_trainer(self) -> None:
-        self.trainer = self.default_trainer[0](**self.default_trainer[1])
-
-    def set_trainer_bases(self) -> None:
-        for name in self.trainer_bases:
-            self.trainer.set_basis(name, self._bases[name])
+    def construct_default_trainer(self, **kwargs) -> None:
+        self.trainer = self.default_trainer[0](**(self.default_trainer[1] | kwargs))
 
     # Submodels
     def construct_default_submodels(self) -> None:

@@ -20,6 +20,7 @@ from typing import Any
 from baseobjects.collections import OrderableDict
 
 # Local Packages #
+from .io import IODelegator
 from .baseoperation import BaseOperation
 
 
@@ -115,15 +116,26 @@ class OperationGroup(BaseOperation):
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Operations
-    def create_operations(self, *args: Any, **kwargs) -> None:
+    def create_operations(self, *args: Any, override: bool = False, **kwargs: Any) -> None:
         """Creates the inner operations.
 
         Args:
             *args: The arguments for creating the inner operations.
+            override: Determines if the inner operations will be overridden.
             **kwargs: The keyword arguments for creating the inner operations.
         """
 
     # IO
+    def construct_io(self, *args, **kwargs) -> None:
+        """Constructs the io for this object.
+
+        Args:
+            *args: The arguments for constructing the io.
+            **kwargs: The keyword arguments for constructing the io.
+        """
+        self.inputs.create_io(self.input_names, *args, **kwargs)
+        self.outputs.create_io(self.output_names, type_=IODelegator, *args, **kwargs)
+
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
         """Links the inner operations' IO.
 

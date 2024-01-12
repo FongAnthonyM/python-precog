@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ...header import *
+from ....header import *
 
 # Header #
 __author__ = __author__
@@ -18,15 +18,15 @@ from typing import Any
 import numpy as np
 
 # Local Packages #
-from ...basis import BaseBasisModifier
-from ..operation import BaseOperation
+from ....operations.operation import BaseOperation
+from ..basebasismodifier import BaseBasisModifier
 
 
 # Definitions #
 # Classes #
 class BasisModifierOperation(BaseOperation):
     default_input_names: tuple[str, ...] = ("data", "bases")
-    default_output_names: tuple[str, ...] = ("t_data",)
+    default_output_names: tuple[str, ...] = ("m_data",)
     modifier_type: type[BaseBasisModifier] | None = None
 
     # Magic Methods #

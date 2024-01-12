@@ -22,6 +22,7 @@ from torch.nn.functional import conv1d, conv2d, conv3d
 from torch.nn import Parameter
 
 # Local Packages #
+from ....basis import ModelBasis
 from .basennmfmodule import BaseNNMFModule
 
 
@@ -35,9 +36,10 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
     )
 
     # Attributes #
-    conv: CallableMultiplexer
     _padding_size: tuple[int, ...] = ()
+    conv: CallableMultiplexer
 
+    # Properties #
     @property
     def padding_size(self) -> tuple[int, ...]:
         if not self._padding_size:
@@ -48,10 +50,13 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
     # Construction/Destruction
     def __init__(
         self,
-        W: Parameter | dict[str, Any] | None = None,
-        H: Parameter | dict[str, Any] | None = None,
-        conv_type: str | None = None,
+        W: ModelBasis | Parameter | dict[str, Any] | None = None,
+        H: ModelBasis | Parameter | dict[str, Any] | None = None,
         *args: Any,
+        bases: dict[str, ModelBasis] | None = None,
+        state_variables: dict[str, Any] | None = None,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -63,24 +68,49 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
 
         # Construct #
         if init:
-            self.construct(conv_type=conv_type, **kwargs)
+            self.construct(
+                W=W,
+                H=H,
+                bases=bases,
+                state_variables=state_variables,
+                create_defaults=create_defaults,
+                bases_kwargs=bases_kwargs,
+                **kwargs,
+            )
 
     # Instance Methods  #
     # Constructors/Destructors
     def construct(
         self,
+        W: ModelBasis | Parameter | dict[str, Any] | None = None,
+        H: ModelBasis | Parameter | dict[str, Any] | None = None,
         conv_type: str | None = None,
         *args: Any,
+        bases: dict[str, ModelBasis] | None = None,
+        state_variables: dict[str, Any] | None = None,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         # Construct Parent #
+        super().construct(
+            W=W,
+            H=H,
+            bases=bases,
+            state_variables=state_variables,
+            create_defaults=create_defaults,
+            bases_kwargs=bases_kwargs,
+            **kwargs,
+        )
+
+        # Construct New #
         if conv_type is not None:
             self.conv.select(conv_type)
         elif self.W is not None:
             self.convolution_setup()
 
     def convolution_setup(self):
-        shape = self.W.shape
+        shape = self.W.tensor.shape
         ndim = len(shape)
         self._padding_size = (shape[d] - 1 for d in range(2, len(shape)))
         if ndim == 3:
@@ -90,7 +120,7 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
         elif ndim == 5:
             self.conv.select("conv3d")
 
-    # Instance Methods  #
+    # Instance Methods #
     def reconstruct(self, *args, **kwargs) -> Tensor:
         """Creates a reconstruction by taking the product of W and H."""
-        return self.conv(self.H, self.W, padding=self.padding_size)
+        return self.conv(self.H.tensor, self.W.tensor, padding=self.padding_size)

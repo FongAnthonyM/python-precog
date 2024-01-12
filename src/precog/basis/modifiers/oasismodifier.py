@@ -17,10 +17,10 @@ from typing import Any
 
 # Third-Party Packages #
 import torch
-from oasis.functions import GetSn, estimate_time_constant, deconvolve
+from oasis.functions import deconvolve
 
 # Local Packages #
-from ..modelbasis import ModelBasis
+from ..bases import ModelBasis
 from .basebasismodifier import BaseBasisModifier
 
 

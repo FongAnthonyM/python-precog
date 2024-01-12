@@ -13,8 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
-from typing import Any, Callable, Optional
+from typing import ClassVar, Any, Callable, Optional
 
 # Third-Party Packages #
 import torch
@@ -23,14 +22,15 @@ from torch.optim import Optimizer
 from torch.nn import Module
 
 # Local Packages #
-from ..modelbasis import ModelBasis
+from ..bases import ModelBasis
 from .basebasismodifier import BaseBasisModifier
 
 
 # Definitions #
 # Classes #
 class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
-    default_state_variables: dict[str, Any] = {
+    # Class Attributes #
+    default_state_variables: ClassVar[dict[str, Any]] = {
         "theta": None,
         "beta": None,
         "penalty": None,
@@ -39,6 +39,27 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         "step": 0,
     }
 
+    # Attributes #
+    _module: Module | None = None
+    updating_basis_name: str = "H"
+
+    # Properties #
+    @property
+    def module(self) -> Module | None:
+        return self._module
+
+    @module.setter
+    def module(self, value: Module | None) -> None:
+        if value is None and len(self.all_bases.maps) > 1:
+            self.all_bases.maps.pop()
+        elif value is not None:
+            if len(self.all_bases.maps) == 1:
+                self.all_bases.maps.append(value.all_bases)
+            else:
+                self.all_bases.maps[1] = value.all_bases
+
+        self._module = value
+
     # Magic Methods #
     # Construction/Destruction
     def __init__(
@@ -46,19 +67,29 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
         module: Module | None = None,
+        updating_basis_name: str | None = None,
         *args: Any,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.module: Module | None = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
-            self.construct(bases=bases, state_variables=state_variables, module=module, **kwargs)
+            self.construct(
+                bases=bases,
+                state_variables=state_variables,
+                module=module,
+                updating_basis_name=updating_basis_name,
+                create_defaults=create_defaults,
+                bases_kwargs=bases_kwargs,
+                **kwargs,
+            )
 
     # Instance Methods  #
     # Constructors/Destructors
@@ -67,14 +98,27 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
         module: Module | None = None,
-        *args,
-        **kwargs,
+        updating_basis_name: str | None = None,
+        *args: Any,
+        create_defaults: bool = False,
+        bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        **kwargs: Any,
     ) -> None:
-        if module is None:
+        # Assign New #
+        if module is not None:
             self.module = module
 
+        if updating_basis_name is not None:
+            self.updating_basis_name = updating_basis_name
+
         # Construct Parent #
-        super().construct(bases=bases, state_variables=state_variables, **kwargs)
+        super().construct(
+                bases=bases,
+                state_variables=state_variables,
+                create_defaults=create_defaults,
+                bases_kwargs=bases_kwargs,
+                **kwargs,
+            )
 
     @torch.enable_grad()
     def closure(self):
@@ -140,7 +184,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
             closure = torch.enable_grad()(closure)
 
         # Cache the gradient status for reversion at the end of the function
-        tensor = self.basis.tensor
+        tensor = self.all_bases[self.updating_basis_name].tensor
         required_grad = tensor.requires_grad
         tensor.requires_grad = True
 

@@ -1,8 +1,8 @@
-"""modelbasis.py
+"""basis.py
 
 """
 # Package Header #
-from ..header import *
+from precog.header import *
 
 # Header #
 __author__ = __author__
@@ -13,20 +13,23 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 # Third-Party Packages #
-from baseobjects import BaseComposite
-import numpy as np
+import torch
+from torch import Tensor
+from torch.nn import Parameter
 
 # Local Packages #
-from .statevariables import BaseStateVariables
+from precog.basis.statevariables import BaseStateVariables
+from .modelbasis import ModelBasis
 
 
 # Definitions #
 # Classes #
-class ModelBasis(BaseComposite):
+class TorchModelBasis(ModelBasis):
+    # Attributes #
     state_variables_type: type[BaseStateVariables] = BaseStateVariables
     default_component_types: dict[str, tuple[type, dict[str, Any]]] = {}
 
@@ -34,10 +37,12 @@ class ModelBasis(BaseComposite):
     # Construction/Destruction
     def __init__(
         self,
-        tensor: np.ndarray | None = None,
+        tensor: Tensor | None = None,
+        size: Iterable[int] | None = None,
+        requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
         factor_axis: int | None = None,
-        *args,
+        *,
         component_kwargs: dict[str, dict[str, Any]] | None = None,
         component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
         components: dict[str, Any] | None = None,
@@ -45,18 +50,16 @@ class ModelBasis(BaseComposite):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.factor_axis: init = -1
-
-        self.tensor: Any = None
-        self.state_variables: BaseStateVariables | None = None
 
         # Parent Attributes #
-        super().__init__(*args, init=False, **kwargs)
+        super().__init__(init=False, **kwargs)
 
         # Construct #
         if init:
             self.construct(
                 tensor=tensor,
+                size=size,
+                requires_grad=requires_grad,
                 state_variables=state_variables,
                 factor_axis=factor_axis,
                 component_kwargs=component_kwargs,
@@ -65,11 +68,11 @@ class ModelBasis(BaseComposite):
                 **kwargs,
             )
 
-    # Instance Methods  #
-    # Constructors/Destructors
     def construct(
         self,
-        tensor: np.ndarray | None = None,
+        tensor: Tensor | None = None,
+        size: Iterable[int] | None = None,
+        requires_grad: bool = True,
         state_variables: Mapping[str, Any] | None = None,
         factor_axis: int | None = None,
         *args: Any,
@@ -78,20 +81,26 @@ class ModelBasis(BaseComposite):
         components: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        if factor_axis is not None:
-            self.factor_axis = factor_axis
-
-        if state_variables is not None:
-            self.state_variables(dict_=state_variables)
+        if size is not None and tensor is None:
+            self.create_tensor(size=size, requires_grad=requires_grad)
 
         # Construct Parent #
         super().construct(
+            tensor=tensor,
+            factor_axis=factor_axis,
             component_kwargs=component_kwargs,
             component_types=component_types,
             components=components,
             **kwargs,
         )
 
-    def create_state_variables(self, dict_: Mapping[str, Any], *args, **kwargs) -> BaseStateVariables:
-        self.state_variables = self.state_variables_type(dict_, *args, **kwargs)
-        return self.state_variables
+    def create_tensor(self, size: Iterable[int], requires_grad: bool = True, **kwargs: Any) -> Tensor:
+        """Create an empty tensor which contains values.
+
+        Args:
+            size: The dimensions of the tensor.
+            requires_grad:
+            **kwargs: The keyword arguments for creating an empty tensor.
+        """
+        self.tensor = Parameter(torch.empty(*size, **kwargs), requires_grad=requires_grad)
+        return self.tensor

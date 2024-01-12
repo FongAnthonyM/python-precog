@@ -23,6 +23,7 @@ from baseobjects import BaseDict
 from .baseio import IOMap, BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
 from .iocontainer import IOContainer
+from .iodelegator import IODelegator
 
 
 # Definitions #
@@ -41,6 +42,7 @@ class IOManager(BaseDict, BaseIOMultiplexer):
 
     Args:
         io_: The input/outputs to be managed.
+        names: The names of IO to create and manage.
         *args: Arguments for inheritance.
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
@@ -54,6 +56,7 @@ class IOManager(BaseDict, BaseIOMultiplexer):
     def __init__(
         self,
         io_: dict[str, BaseIO | None] | None = None,
+        names: Iterable[str] | None = None,
         *args: Any,
         init: bool = True,
         **kwargs: Any,
@@ -63,23 +66,41 @@ class IOManager(BaseDict, BaseIOMultiplexer):
 
         # Construction #
         if init:
-            self.construct(io_=io_, *args, **kwargs)
+            self.construct(io_=io_, names=names, *args, **kwargs)
+
+    # Set Item
+    def __setitem__(self, key: str, item: BaseIO) -> None:
+        """Sets an IO within this manager. If an existing IO is an IODelegator, set it to
+
+        Args:
+            key: The name of the IO to set.
+            item: The IO object to set.
+        """
+        if (io_object := self.data.get(key, None)) is not None and isinstance(io_object, IODelegator):
+            io_object.io = item
+        else:
+            self.data[key] = item
 
     # Instance Methods #
     # Constructors/Destructors
     def construct(
         self,
         io_: dict[str, BaseIO | None] | None = None,
+        names: Iterable[str] | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
-            io_: The input/outputs to be managed
+            io_: The input/outputs to be managed.
+            names: The names of IO to create and manage.
             *args: Arguments for inheritance.
             **kwargs: Keyword arguments for inheritance.
         """
+        if names is not None:
+            self.create_io(name=names)
+
         if io_ is not None:
             self.update_io(io_)
 
@@ -174,7 +195,8 @@ class IOManager(BaseDict, BaseIOMultiplexer):
             **kwargs: The IO values to put into IO objects.
         """
         for k, v in (kwargs if __m is None else (__m | kwargs)).items():
-            self.data[k].put(v)
+            if (io_object := self.data.get(k, None)) is not None:
+                io_object.put(v)
 
     # IO Mapping
     def get_links(self) -> dict[str, IOMap] | None:

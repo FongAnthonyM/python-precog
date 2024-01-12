@@ -19,7 +19,8 @@ from typing import ClassVar, Any
 
 # Local Packages #
 from ...basis import TorchModelBasis
-from precog.architectures.torch.nnmf import NNMFDModule
+from ...architectures.torch.nnmf import NNMFDModule
+from ...trainers import NNMFSpikeTrainer
 from .torchmodel import TorchModel
 
 
@@ -31,3 +32,4 @@ class NNMFDTorchModel(TorchModel):
         "H": (TorchModelBasis, {}),
     }
     default_architecture: ClassVar[tuple[type, dict[str, Any]]] = (NNMFDModule, {})
+    default_trainer: ClassVar[tuple[type, dict[str]]] = (NNMFSpikeTrainer, {})

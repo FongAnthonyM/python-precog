@@ -2,7 +2,7 @@
 An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -14,7 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
@@ -64,8 +64,8 @@ class BaseOperation(CallableMultiplexObject):
         **kwargs: Keyword arguments for inheritance.
     """
     default_execute: str | None = None
-    default_input_names: tuple[str, ...] = ()
-    default_output_names: tuple[str, ...] = ()
+    default_input_names: ClassVar[tuple[str, ...]] = ()
+    default_output_names: ClassVar[tuple[str, ...]] = ()
     execute_output_names: set[str, ...] = {None, "execute_no_output", "execute_one_output", "execute_multiple_outputs"}
 
     # Magic Methods #
@@ -191,7 +191,6 @@ class BaseOperation(CallableMultiplexObject):
         Returns:
             The result of the evaluation.
         """
-        pass
 
     # Execute
     def execute_no_output(self) -> None:

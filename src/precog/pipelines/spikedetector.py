@@ -19,11 +19,11 @@ from typing import Any, Callable
 import numpy as np
 
 # Local Packages #
-from .operation import OperationGroup
-from .streamers import CDFSStreamer
-from .remapper import Remapper
-from .preprocessingfilterbank import PreprocessingFilterBank
-from .standardizers import NNMFLineLengthStandardizer
+from ..operations.operation import OperationGroup
+from ..operations.streamers import CDFSStreamer
+from ..operations.remapper import Remapper
+from ..operations.preprocessingfilterbank import PreprocessingFilterBank
+from ..operations.standardizers import NNMFLineLengthStandardizer
 
 
 # Definitions #

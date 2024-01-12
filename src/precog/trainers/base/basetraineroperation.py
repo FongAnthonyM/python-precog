@@ -1,4 +1,4 @@
-""" adaptivemultiplicativeoperation.py.py
+""" basetraineroperation.py.py
 
 """
 # Package Header #
@@ -10,26 +10,33 @@ __credits__ = __credits__
 __maintainer__ = __maintainer__
 __email__ = __email__
 
+
 # Imports #
 # Standard Libraries #
-from typing import Any
+from abc import abstractmethod
+from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects import MethodMultiplexer
+from baseobjects import BaseObject
 import numpy as np
 
 # Local Packages #
-from ...basis import AdaptiveMultiplicativeModifier
-from .basismodiferoperation import BasisModifierOperation
+from ...basis import ModelBasis
+from ...operations import BaseOperation
+from .basetrainer import BaseTrainer
 
 
 # Definitions #
 # Classes #
-class AdaptiveMultiplicativeOperation(BasisModifierOperation):
-    modifier_type: type[AdaptiveMultiplicativeModifier] = AdaptiveMultiplicativeModifier
+class BaseTrainerOperation(BaseTrainer, BaseOperation):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("bases",)
 
+    # Instance Methods #
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    @abstractmethod
+    def evaluate(self, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -39,4 +46,3 @@ class AdaptiveMultiplicativeOperation(BasisModifierOperation):
         Returns:
             The result of the evaluation.
         """
-        return self.modifier.update(x=data, *args, **kwargs)

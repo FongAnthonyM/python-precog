@@ -14,7 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
-from typing import Any, Callable
+from typing import ClassVar, Any, Callable
 
 # Third-Party Packages #
 import numpy as np
@@ -29,8 +29,9 @@ from ..constraints import NonNegative
 # Definitions #
 # Classes #
 class NNMFLineLengthStandardizer(OperationGroup):
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("features",)
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("features",)
 
     # Magic Methods #
     # Construction/Destruction
@@ -182,7 +183,7 @@ class NNMFLineLengthStandardizer(OperationGroup):
         non_negative_op.inputs["data"] = shift_scaler.outputs["ss_data"]
 
         # Set Output
-        self.outputs["features"] = non_negative_op.outputs["nn_data"]
+        non_negative_op.outputs["nn_data"] = self.outputs["features"]
 
     # Setup
     def setup(

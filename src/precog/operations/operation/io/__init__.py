@@ -16,5 +16,6 @@ __email__ = __email__
 from .baseio import BaseIO
 from .baseiomultiplexer import BaseIOMultiplexer
 from .iocontainer import IOContainer
+from .iodelegator import IODelegator
 from .iomanager import IOManager
 from .iorouter import IORouter

@@ -55,5 +55,5 @@ class ExampleOperationGroup(OperationGroup):
         sum_2.outputs["out_number"] = appender
 
         # Group Outputs
-        self.outputs["group_result"] = checker.outputs["result"]  # Can link the IO of single IO items.
+        checker.outputs["result"] = self.outputs["group_result"]  # Can link the IO of single IO items.
 

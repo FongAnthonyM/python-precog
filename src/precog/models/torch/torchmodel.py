@@ -48,15 +48,15 @@ class TorchModel(BaseModel):
 
             if retain_bases:
                 for name, parameter in architecture.named_parameters(recurse=False):
-                    if (basis := self._bases.get(name, None)) is not None:
+                    if (basis := self.local_bases.get(name, None)) is not None:
                         setattr(architecture, name, basis.tensor)
                     else:
-                        self._bases[name] = TorchModelBasis(tensor=parameter)
+                        self.local_bases[name] = TorchModelBasis(tensor=parameter)
             else:
-                self._bases.clear()
+                self.local_bases.clear()
                 bases = {n: TorchModelBasis(tensor=p) for n, p in architecture.named_parameters(recurse=False)}
-                self._bases.update(bases)
+                self.local_bases.update(bases)
 
     def set_architecture_bases(self) -> None:
         for name in self.architecture_bases:
-            setattr(self.architecture, name, self._bases[name].tensor)
+            setattr(self.architecture, name, self.local_bases[name].tensor)

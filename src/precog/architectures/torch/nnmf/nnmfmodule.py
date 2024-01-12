@@ -28,4 +28,4 @@ class NNMFModule(BaseNNMFModule):
     # Instance Methods  #
     def reconstruct(self, *args, **kwargs) -> Tensor:
         """Creates a reconstruction by taking the product of W and H."""
-        return linear(self.H, self.W)
+        return linear(self.H.tensor, self.W.tensor)
