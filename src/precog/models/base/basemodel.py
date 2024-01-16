@@ -28,15 +28,16 @@ from ...trainers import BaseTrainer
 # Classes #
 class BaseModel(BaseObject):
     # Class Attributes #
-    _bases_types: ClassVar[tuple[str]] = ("local", "architecture", "trainer", "submodels")
-    default_bases: ClassVar[dict[str, dict[str, dict | tuple[type, dict[str, Any]]]]] = {}
+    _part_types: ClassVar[tuple[str]] = ("local", "architecture", "trainer", "submodels")
     default_state_variables: ClassVar[dict[str, Any]] = {}
+    default_bases: ClassVar[dict[str, dict[str, dict | tuple[type, dict[str, Any]]]]] = {}
     default_architecture: ClassVar[tuple[type[BaseArchitecture], dict[str, Any]]] = ()
     default_trainer: ClassVar[tuple[type[BaseTrainer], dict[str]]] = ()
     default_submodels: ClassVar[dict[str, tuple[type["BaseModel"], dict[str, Any]]]] = {}
 
     # Attributes #
-    local_state_variables:dict[str, Any]
+    submodel_type: type["BaseModel"]
+    local_state_variables: dict[str, Any]
     local_bases: dict[str, ModelBasis]
     _atoms: dict[str, Any]
     architecture: BaseArchitecture | None = None
@@ -45,6 +46,10 @@ class BaseModel(BaseObject):
     submodels: dict[str, "BaseModel"]
 
     # Properties
+    @property
+    def state_variables(self) -> dict[str, Any]:
+        return self.get_state_variables()
+
     @property
     def bases(self) -> dict[str, Any]:
         return self.get_bases()
@@ -74,11 +79,18 @@ class BaseModel(BaseObject):
         self.submodels = {}
 
         # Parent Attributes #
-        super().__init__(init=False)
+        super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
-            self.construct(bases=bases, architecture=architecture, trainer=trainer, submodels=submodels, **kwargs)
+            self.construct(
+                bases=bases,
+                state_variables=state_variables,
+                architecture=architecture,
+                trainer=trainer,
+                submodels=submodels,
+                **kwargs,
+            )
 
     # Instance Methods  #
     # Constructors/Destructors
@@ -98,7 +110,7 @@ class BaseModel(BaseObject):
             state_variables = self.default_state_variables
         else:
             state_variables = {
-                n: self.default_state_variables.get(n, {}) | state_variables.get(n, {}) for n in self._bases_types
+                n: self.default_state_variables.get(n, {}) | state_variables.get(n, {}) for n in self._part_types
             }
         
         if (local_state_variables := state_variables.get("local", None)) is not None:
@@ -106,7 +118,7 @@ class BaseModel(BaseObject):
         
         # Bases
         d_bases = self.construct_default_bases()
-        bases = d_bases if bases is None else {n: d_bases.get(n, {}) | bases.get(n, {}) for n in self._bases_types}
+        bases = d_bases if bases is None else {n: d_bases.get(n, {}) | bases.get(n, {}) for n in self._part_types}
 
         if (local_bases := bases.get("local", None)) is not None:
             self.local_bases.update(local_bases)
@@ -131,6 +143,18 @@ class BaseModel(BaseObject):
         self.construct_default_submodels()
         if submodels is not None:
             self.submodels.update(submodels)
+
+    # State Variables
+    def get_submodel_state_variables(self) -> dict[str, Any]:
+        return {name: submodel.state_variables for name, submodel in self.submodels.items()}
+
+    def get_state_variables(self) -> dict[str, Any]:
+        return {
+            "local": self.local_state_variables,
+            "architecture": self.architecture.state_variables,
+            "trainer": self.trainer.state_variables,
+            "submodels": self.get_submodel_state_variables(),
+        }
 
     # Bases
     def create_bases(self, bases: dict[str, dict] | tuple[type, dict[str, Any]]) -> dict[str, dict | ModelBasis]:
@@ -164,10 +188,24 @@ class BaseModel(BaseObject):
     def construct_default_architecture(self, **kwargs) -> None:
         self.architecture = self.default_architecture[0](**(self.default_architecture[1] | kwargs))
 
+    def build_architecture(self, **kwargs) -> None:
+        pass
+
     # Trainer
     def construct_default_trainer(self, **kwargs) -> None:
         self.trainer = self.default_trainer[0](**(self.default_trainer[1] | kwargs))
 
+    def build_trainer(self, **kwargs) -> None:
+        pass
+
     # Submodels
     def construct_default_submodels(self) -> None:
         self.submodels.update({n: t(**k) for n, (t, k) in self.default_submodels.items()})
+
+    def construct_subomodels_from_architecture(self) -> None:
+        self.submodels.update(
+            {n: self.submodel_type(architecture=a) for n, a in self.architecture.subarchitectures.items()},
+        )
+
+    def construct_subomodels_from_trainer(self) -> None:
+        self.submodels.update({n: self.submodel_type(trainer=t) for n, t in self.trainer.subtrainers.items()})

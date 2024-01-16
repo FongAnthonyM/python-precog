@@ -26,3 +26,5 @@ from ...operations import BaseOperation
 # Classes #
 class BaseTrainer(BasisContainer):
     """An abstract base class for model trainers."""
+    # Attributes #
+    subtrainers: dict[str, "BaseTrainer"]

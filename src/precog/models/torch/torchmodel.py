@@ -40,23 +40,8 @@ class TorchModel(BaseModel):
 
     # Instance Methods  #
     # Architecture
-    def set_architecture(self, architecture: Module | None, retain_bases: bool = True) -> None:
+    def set_architecture(self, architecture: Module | None) -> None:
         self._architecture = architecture
         if architecture is not None:
             self.submodels.clear()
             self.submodels.update({n: TorchModel(architecture=a) for n, a in architecture.named_modules()})
-
-            if retain_bases:
-                for name, parameter in architecture.named_parameters(recurse=False):
-                    if (basis := self.local_bases.get(name, None)) is not None:
-                        setattr(architecture, name, basis.tensor)
-                    else:
-                        self.local_bases[name] = TorchModelBasis(tensor=parameter)
-            else:
-                self.local_bases.clear()
-                bases = {n: TorchModelBasis(tensor=p) for n, p in architecture.named_parameters(recurse=False)}
-                self.local_bases.update(bases)
-
-    def set_architecture_bases(self) -> None:
-        for name in self.architecture_bases:
-            setattr(self.architecture, name, self.local_bases[name].tensor)

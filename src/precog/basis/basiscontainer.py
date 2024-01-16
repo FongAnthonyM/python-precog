@@ -27,8 +27,8 @@ from .bases import ModelBasis
 # Classes #
 class BasisContainer(BaseObject):
     # Class Attributes #
-    default_bases: ClassVar[dict[str, tuple[type[ModelBasis], dict[str, Any]]]] = {}
     default_state_variables: ClassVar[dict[str, Any]] = {}
+    default_bases: ClassVar[dict[str, tuple[type[ModelBasis], dict[str, Any]]]] = {}
 
     # Class Methods #
     @classmethod
@@ -36,9 +36,9 @@ class BasisContainer(BaseObject):
         return cls.default_state_variables | kwargs
 
     # Attributes #
+    state_variables: dict[str, Any]
     bases: dict[str, ModelBasis]
     all_bases: ChainMap[str, ModelBasis]
-    state_variables: dict[str, Any]
 
     # Magic Methods #
     # Construction/Destruction
@@ -52,10 +52,10 @@ class BasisContainer(BaseObject):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
-        # New Attributes #
+        # Attributes #
+        self.state_variables = self.create_state_variables()
         self.bases = {}
         self.all_bases = ChainMap(self.bases)
-        self.state_variables: dict = self.create_state_variables()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)

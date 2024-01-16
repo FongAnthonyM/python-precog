@@ -26,3 +26,5 @@ from ...basis import ModelBasis, BasisContainer
 # Classes #
 class BaseArchitecture(BasisContainer):
     """An abstract base class for model architectures."""
+    # Attributes #
+    subarchitectures: dict[str, "BaseArchitecture"]

@@ -17,13 +17,12 @@ from abc import abstractmethod
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-import torch
 from torch.nn import Parameter
 from torch import Tensor
 
 # Local Packages #
 from ....basis import ModelBasis
-from ..basemodulearchitecture import BaseModuleArchitecture
+from precog.architectures.torch.base.basemodulearchitecture import BaseModuleArchitecture
 
 
 # Definitions #
