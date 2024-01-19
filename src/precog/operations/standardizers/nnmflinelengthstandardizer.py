@@ -179,8 +179,8 @@ class NNMFLineLengthStandardizer(OperationGroup):
         self.inputs["data"] = line_length.inputs["data"]
 
         # Inner IO
-        shift_scaler.inputs["data"] = line_length.outputs["features"]
-        non_negative_op.inputs["data"] = shift_scaler.outputs["ss_data"]
+        line_length.outputs["features"] = shift_scaler.inputs["data"]
+        shift_scaler.outputs["ss_data"] = non_negative_op.inputs["data"]
 
         # Set Output
         non_negative_op.outputs["nn_data"] = self.outputs["features"]

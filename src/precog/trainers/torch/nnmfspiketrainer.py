@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from ..header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -19,13 +19,13 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 
 # Local Packages #
-from ..operations import BaseOperation, OperationGroup
-from ..operations.operation.io import IOManager
-from ..architectures import BaseNNMFModule, NNMFDModule
-from ..basis import ModelBasis
-from ..basis.modifiers import AdaptiveMultiplicativeModifier
-from ..basis.modifiers.operations import AdaptiveMultiplicativeOperation
-from .base import BaseTrainerOperation
+from ...operations import BaseOperation, OperationGroup
+from ...operations.operation.io import IOManager
+from ...architectures.torch import BaseNNMFModule, NNMFDModule
+from ...basis import ModelBasis
+from ...basis.modifiers import AdaptiveMultiplicativeModifier
+from ...basis.modifiers.operations import AdaptiveMultiplicativeOperation
+from ..bases import BaseTrainerOperation
 
 
 # Definitions #
@@ -36,6 +36,8 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
 
     # Attributes #
+    local_state_variables: dict[str, Any]
+
     W_modifier_type: type = AdaptiveMultiplicativeOperation
     H_modifier_type: type = AdaptiveMultiplicativeOperation
     W_refiner_type: type = None
@@ -46,10 +48,43 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     H_modifier_kwargs: dict[str, Any]
     W_refiner_kwargs: dict[str, Any]
     H_refiner_kwargs: dict[str, Any]
-    W_architecture: BaseNNMFModule | None = None
-    H_architecture: BaseNNMFModule | None = None
+    _W_architecture: BaseNNMFModule | None = None
+    _H_architecture: BaseNNMFModule | None = None
 
-    # Attributes #
+    # Properties #
+    @property
+    def state_variables(self) -> dict[str, Any]:
+        return self.get_state_variables()
+
+    @state_variables.setter
+    def state_variables(self, value: dict[str, Any]) -> None:
+        self.local_state_variables = value
+
+    @property
+    def W_architecture(self) -> BaseNNMFModule | None:
+        if (op := self.operations.get("W_modifier", None)) is not None:
+            return op.module
+        else:
+            return self._W_architecture
+        
+    @W_architecture.setter
+    def W_architecture(self, value: BaseNNMFModule | None) -> None:
+        self._W_architecture = value
+        if (op := self.operations.get("W_modifier", None)) is not None:
+            op.modifier.module = value
+
+    @property
+    def H_architecture(self) -> BaseNNMFModule | None:
+        if (op := self.operations.get("H_modifier", None)) is not None:
+            return op.module
+        else:
+            return self._H_architecture
+
+    @H_architecture.setter
+    def H_architecture(self, value: BaseNNMFModule | None) -> None:
+        self._H_architecture = value
+        if (op := self.operations.get("H_modifier", None)) is not None:
+            op.modifier.module = value
 
     # Magic Methods #
     # Construction/Destruction
@@ -165,6 +200,17 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
             **kwargs,
         )
 
+    # State Variables
+    def get_state_variables(self) -> dict[str, Any]:
+        return {
+            "local": self.local_state_variables,
+            "W_modifer": {} if (W := self.operations.get("W_modifier", None)) is None else W.state_variables,
+            "H_modifer": {} if (H := self.operations.get("H_modifier", None)) is None else H.state_variables,
+            "W_refiner": {} if (w := self.operations.get("W_refiner", None)) is None else w.state_variables,
+            "H_refiner": {} if (h := self.operations.get("H_refiner", None)) is None else h.state_variables,
+        }
+
+    # Modifiers
     def create_W_modifier_kwargs(self, **kwargs: Any) -> dict[str, Any]:
         self.W_modifier_kwargs.update(kwargs)
         
@@ -215,7 +261,8 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
         # Get Operations
         H_modifier = self.operations["H_modifier"]
-        H_refiner = self.operations["H_refiner"]
+        H_refiner = self.operations.get("H_refiner", None)
+
         W_modifier = self.operations["W_modifier"]
         W_refiner = self.operations.get("W_refiner", None)
 
@@ -223,19 +270,22 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         self.inputs["data"] = H_modifier.inputs["data"]
 
         # Inner IO
-        H_modifier.ouputs["m_bases"] = bases_separator_H = IOManager(names=("H",))
-        bases_separator_H["H"] = H_refiner.inputs["basis"]
-        H_refiner.outputs["r_bases"] = W_modifier.inputs["bases"]
+        if H_refiner is not None:
+            H_modifier.outputs["m_bases"] = bases_separator_H = IOManager(names=("H",))
+            bases_separator_H["H"] = H_refiner.inputs["basis"]
+            H_refiner.outputs["r_bases"] = W_modifier.inputs["bases"]
+        else:
+            H_modifier.outputs["m_bases"] = W_modifier.inputs["bases"]
 
         if W_refiner is not None:
-            W_modifier.ouputs["m_bases"] = bases_separator_W = IOManager(names=("W",))
+            W_modifier.outputs["m_bases"] = bases_separator_W = IOManager(names=("W",))
             bases_separator_W["W"] = W_refiner.inputs["bases"]
 
             # Set Output
             W_refiner.outputs["r_bases"] = self.outputs["bases"]
         else:
             # Set Output
-            W_modifier.ouputs["m_bases"] = self.outputs["bases"]
+            W_modifier.outputs["m_bases"] = self.outputs["bases"]
 
     # Setup
     def setup(
@@ -257,6 +307,9 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
             link_kwargs: The keyword arguments for creating linking the inner operations' IO.
             **kwargs: The keyword arguments for setup.
         """
+        if create_kwargs is None:
+            create_kwargs = {}
+
         if "W_modifier" not in self.operations:
             create_kwargs["W_modifier_kwargs"] = self.create_W_modifier_kwargs(
                 **(create_kwargs.get("W_modifier_kwargs", {})),
@@ -267,7 +320,7 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
                 **(create_kwargs.get("H_modifier_kwargs", {})),
             )
         
-        super().__init__(
+        super().setup(
             *args, 
             create=create,
             create_kwargs=create_kwargs,

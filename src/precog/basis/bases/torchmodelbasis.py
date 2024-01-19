@@ -1,8 +1,8 @@
-"""basis.py
+"""torchmodelbasis.py
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -22,7 +22,7 @@ from torch import Tensor
 from torch.nn import Parameter
 
 # Local Packages #
-from precog.basis.statevariables import BaseStateVariables
+from ..statevariables import BaseStateVariables
 from .modelbasis import ModelBasis
 
 
@@ -49,8 +49,6 @@ class TorchModelBasis(ModelBasis):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
-        # New Attributes #
-
         # Parent Attributes #
         super().__init__(init=False, **kwargs)
 
@@ -94,6 +92,7 @@ class TorchModelBasis(ModelBasis):
             **kwargs,
         )
 
+    # Todo: Move to subclass
     def create_tensor(self, size: Iterable[int], requires_grad: bool = True, **kwargs: Any) -> Tensor:
         """Create an empty tensor which contains values.
 
@@ -102,5 +101,5 @@ class TorchModelBasis(ModelBasis):
             requires_grad:
             **kwargs: The keyword arguments for creating an empty tensor.
         """
-        self.tensor = Parameter(torch.empty(*size, **kwargs), requires_grad=requires_grad)
+        self.tensor = Parameter(torch.rand(*size, **kwargs).abs(), requires_grad=requires_grad)
         return self.tensor

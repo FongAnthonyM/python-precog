@@ -13,5 +13,4 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .base import *
-from .nnmfspiketrainer import NNMFSpikeTrainer
+from .bases import *

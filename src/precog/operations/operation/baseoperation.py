@@ -64,9 +64,19 @@ class BaseOperation(CallableMultiplexObject):
         **kwargs: Keyword arguments for inheritance.
     """
     default_execute: str | None = None
+    execute_output_names: set[str, ...] = {None, "execute_no_output", "execute_one_output", "execute_multiple_outputs"}
     default_input_names: ClassVar[tuple[str, ...]] = ()
     default_output_names: ClassVar[tuple[str, ...]] = ()
-    execute_output_names: set[str, ...] = {None, "execute_no_output", "execute_one_output", "execute_multiple_outputs"}
+
+    # Attributes #
+    setup_kwargs: dict[str, Any]
+    inputs: IOManager
+    outputs: IOManager
+
+    execute: MethodMultiplexer
+
+    input_names: tuple[str, ...] = ()
+    _output_names: tuple[str, ...] = ()
 
     # Magic Methods #
     # Construction/Destruction
@@ -86,8 +96,6 @@ class BaseOperation(CallableMultiplexObject):
         self.execute: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_execute)
 
         self.input_names = self.default_input_names
-
-        self._output_names: tuple[str, ...] = ()
         self.output_names = self.default_output_names
 
         # Parent Attributes #
@@ -132,6 +140,9 @@ class BaseOperation(CallableMultiplexObject):
             setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
+        # New Assignment #
+        self.setup_kwargs = setup_kwargs
+
         # Construct Parent #
         super().construct(*args, **kwargs)
 

@@ -12,7 +12,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 import numpy as np
@@ -25,9 +25,29 @@ from ..basebasismodifier import BaseBasisModifier
 # Definitions #
 # Classes #
 class BasisModifierOperation(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", "bases")
-    default_output_names: tuple[str, ...] = ("m_data",)
+    default_input_names: ClassVar[tuple[str, ...]] = ("data", "bases")
+    default_output_names: ClassVar[tuple[str, ...]] = ("m_data",)
     modifier_type: type[BaseBasisModifier] | None = None
+
+    # New Attributes #
+    modifier: BaseBasisModifier | None = None
+
+    # Properties #
+    @property
+    def state_variables(self) -> dict[str, Any]:
+        return self.modifier.state_variables
+
+    @state_variables.setter
+    def state_variables(self, value: dict[str, Any]) -> None:
+        self.modifier.state_variables = value
+
+    @property
+    def bases(self) -> dict[str, Any]:
+        return self.modifier.bases
+
+    @bases.setter
+    def bases(self, value: dict[str, Any]) -> None:
+        self.modifier.bases = value
 
     # Magic Methods #
     # Construction/Destruction
@@ -41,9 +61,6 @@ class BasisModifierOperation(BaseOperation):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
-        # New Attributes #
-        self.modifier: BaseBasisModifier | None = None
-
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
 

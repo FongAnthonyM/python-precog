@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 
@@ -23,7 +23,8 @@ from .basestatevariables import BaseStateVariables
 
 # Definitions #
 class MotifsStateVariables(BaseStateVariables):
-    default_state_variables: dict[str, Any] = {
+    # Class Attributes #
+    default_state_variables: ClassVar[dict[str, Any]] = {
         "step": 0,
         "neg": None,
         "pos": None,

@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -21,7 +21,7 @@ from baseobjects import BaseComposite
 import numpy as np
 
 # Local Packages #
-from precog.basis.statevariables import BaseStateVariables
+from ..statevariables import BaseStateVariables
 
 
 # Definitions #
@@ -29,6 +29,12 @@ from precog.basis.statevariables import BaseStateVariables
 class ModelBasis(BaseComposite):
     state_variables_type: type[BaseStateVariables] = BaseStateVariables
     default_component_types: dict[str, tuple[type, dict[str, Any]]] = {}
+
+    # Attributes #
+    factor_axis: int = -1
+
+    tensor: Any = None
+    state_variables: BaseStateVariables | None = None
 
     # Magic Methods  #
     # Construction/Destruction
@@ -44,12 +50,6 @@ class ModelBasis(BaseComposite):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
-        # New Attributes #
-        self.factor_axis: init = -1
-
-        self.tensor: Any = None
-        self.state_variables: BaseStateVariables | None = None
-
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
 
@@ -81,8 +81,10 @@ class ModelBasis(BaseComposite):
         if factor_axis is not None:
             self.factor_axis = factor_axis
 
-        if state_variables is not None:
-            self.state_variables(dict_=state_variables)
+        if self.state_variables is None:
+            self.create_state_variables(state_variables)
+        elif state_variables is not None:
+            self.state_variables.update(state_variables)
 
         # Construct Parent #
         super().construct(

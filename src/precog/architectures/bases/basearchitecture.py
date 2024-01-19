@@ -1,4 +1,4 @@
-""" basetrainer.py.py
+""" basearchitecture.py.py
 
 """
 # Package Header #
@@ -13,18 +13,16 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
-from typing import ClassVar, Any
 
 # Third-Party Packages #
 
 # Local Packages #
-from ...basis import ModelBasis, BasisContainer
+from ...basis import BasisContainer
 
 
 # Definitions #
 # Classes #
 class BaseArchitecture(BasisContainer):
-    """An abstract base class for model architectures."""
+    """An abstract bases class for model architectures."""
     # Attributes #
     subarchitectures: dict[str, "BaseArchitecture"]

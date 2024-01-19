@@ -14,7 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from itertools import chain
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 import numpy as np
@@ -30,8 +30,8 @@ from .basefilterbuilder import Filter, BaseFilterBuilder
 class FilterBank(BaseOperation):
 
     default_filter_builders: list[BaseFilterBuilder, ...] = []
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("filter_data",)
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("filter_data",)
 
     # Magic Methods #
     # Construction/Destruction

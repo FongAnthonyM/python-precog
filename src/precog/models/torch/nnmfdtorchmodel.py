@@ -18,18 +18,23 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 
 # Local Packages #
-from ...basis import TorchModelBasis
-from ...architectures.torch.nnmf import NNMFDModule
-from ...trainers import NNMFSpikeTrainer
-from .torchmodel import TorchModel
+from ...architectures.torch import NNMFDModule
+from ...trainers.torch import NNMFSpikeTrainer
+from ..bases import BaseModel
 
 
 # Definitions #
-class NNMFDTorchModel(TorchModel):
+class NNMFDTorchModel(BaseModel):
     # Class Attributes #
-    default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {
-        "W": (TorchModelBasis, {}),
-        "H": (TorchModelBasis, {}),
-    }
-    default_architecture: ClassVar[tuple[type, dict[str, Any]]] = (NNMFDModule, {})
-    default_trainer: ClassVar[tuple[type, dict[str]]] = (NNMFSpikeTrainer, {})
+    default_architecture: ClassVar[tuple[type, dict[str, Any]]] = (NNMFDModule, {"create_defaults": True})
+    default_trainer: ClassVar[tuple[type, dict[str]]] = (NNMFSpikeTrainer, {"create_defaults": True})
+
+    # Instance Methods #
+    # Architecture
+    def build_architecture(self, *args: Any, **kwargs: Any) -> None:
+        pass
+
+    # Trainer
+    def build_trainer(self, *args: Any, **kwargs: Any) -> None:
+        self.trainer.W_architecture = self.architecture
+        self.trainer.H_architecture = self.architecture

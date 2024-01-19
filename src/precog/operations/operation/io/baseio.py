@@ -2,7 +2,7 @@
 An abstract class for IO objects.
 """
 # Package Header #
-from precog.header import *
+from ....header import *
 
 # Header #
 __author__ = __author__

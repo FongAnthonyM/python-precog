@@ -120,29 +120,32 @@ class ButterworthFilterBuilder(BaseFilterBuilder):
 
     # Create Filters
     def create_filters_iter(self, sample_rate: float | None = None, **kwargs: Any) -> Generator[Filter, None, None]:
-        """
-        The create_filters_iter function is a generator that returns an iterable of Filter objects.
-        The function takes in the sample rate and any other keyword arguments needed to create the filter.
-        In this case, we need to know what type of Butterworth filter we want (lowpass, highpass, bandpass),
-        the passband frequency (wp), stopband frequency (ws), gain at passband corner (gpass) and minimum attenuation at stop band(gstop).
-        We also need to know if it's analog or digital and the sample rate.
+        """Creates a generator that yields Filter objects.
 
-        :param self: Access the attributes of the class
-        :param sample_rate: float | None: Set the sample rate of the filter
-        :param **kwargs: Any: Pass in any additional parameters that are not explicitly defined
-        :return: A generator that contains a single filter object
-        :doc-author: Trelent
+        Args:
+            sample_rate: The sample rate of the filter.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A generator that yields Filter objects.
         """
         if sample_rate is not None:
             self.sample_rate = sample_rate
 
+        if self.stop_frequency > (nq := self.sample_rate / 2):
+            pass_frequency = nq * self.pass_frequency / self.stop_frequency
+            stop_frequency = nq
+        else:
+            pass_frequency = self.pass_frequency
+            stop_frequency = self.stop_frequency
+
         # Get butterworth filter parameters
         ford, wn = buttord(
-            wp=self.pass_frequency,  # Passband
-            ws=self.stop_frequency,  # Stopband
-            gpass=self.gpass,        # 3dB corner at pass band
-            gstop=self.gstop,        # 60dB min. attenuation at stop band
-            analog=self.analog,      # Digital filter
+            wp=pass_frequency,   # Passband
+            ws=stop_frequency,   # Stopband
+            gpass=self.gpass,    # 3dB corner at pass band
+            gstop=self.gstop,    # 60dB min. attenuation at stop band
+            analog=self.analog,  # Digital filter
             fs=self.sample_rate,
         )
 

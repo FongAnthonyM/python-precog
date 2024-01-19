@@ -58,6 +58,7 @@ class OperationGroup(BaseOperation):
         **kwargs: Keyword arguments for inheritance.
     """
     default_execute: str | None = "execute_all"
+    operations: OrderableDict[str, BaseOperation]
 
     # Magic Methods #
     # Construction/Destruction
@@ -72,7 +73,7 @@ class OperationGroup(BaseOperation):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.operations: OrderableDict[str, BaseOperation] = OrderableDict()
+        self.operations = OrderableDict()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -93,7 +94,7 @@ class OperationGroup(BaseOperation):
     def construct(
         self,
         operations: Mapping[str, BaseOperation] | None = None,
-        *args: Mapping[str, BaseOperation] | None,
+        *args: Any,
         init_io: Any = True,
         sets_up: bool = True,
         setup_kwargs: dict[str, Any] | None = None,
@@ -164,8 +165,18 @@ class OperationGroup(BaseOperation):
             link_kwargs: The keyword arguments for creating linking the inner operations' IO.
             **kwargs: The keyword arguments for setup.
         """
+        if self.setup_kwargs is not None and (c_kwargs := self.setup_kwargs.get("create_kwargs")) is not None:
+            create_kwargs = c_kwargs | (create_kwargs if create_kwargs is not None else {})
+        elif create_kwargs is None:
+            create_kwargs = {}
+        
         if create:
-            self.create_operations(**(create_kwargs if create_kwargs is not None else {}))
+            self.create_operations(**create_kwargs)
+
+        if self.setup_kwargs is not None and (l_kwargs := self.setup_kwargs.get("link_kwargs")) is not None:
+            link_kwargs = l_kwargs | (link_kwargs if link_kwargs is not None else {})
+        elif link_kwargs is None:
+            link_kwargs = {}
 
         if link:
             self.link_inner_io(**(link_kwargs if link_kwargs is not None else {}))

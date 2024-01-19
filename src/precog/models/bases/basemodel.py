@@ -16,7 +16,7 @@ __email__ = __email__
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects import BaseObject, BaseComponent
+from baseobjects import BaseObject
 
 # Local Packages #
 from ...basis import ModelBasis, BasisContainer
@@ -64,8 +64,8 @@ class BaseModel(BaseObject):
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
         state_variables: dict[str, Any] | None = None,
-        architecture: Any = None,
-        trainer: Any = None,
+        architecture: BaseArchitecture | None = None,
+        trainer: BaseTrainer | None = None,
         submodels: dict[str, "BaseModel"] | None = None,
         *args: Any,
         init: bool = True,
@@ -98,11 +98,13 @@ class BaseModel(BaseObject):
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
         state_variables: dict[str, Any] | None = None,
-        architecture: Any = None,
-        trainer: Any = None,
+        architecture: BaseArchitecture | None = None,
+        trainer: BaseTrainer | None = None,
         submodels: dict[str, "BaseModel"] | None = None,
+        build: bool = True,
         **kwargs,
     ) -> None:
+        # Parent Construct #
         super().construct(**kwargs)
 
         # State Variables
@@ -143,6 +145,12 @@ class BaseModel(BaseObject):
         self.construct_default_submodels()
         if submodels is not None:
             self.submodels.update(submodels)
+
+        # Build
+        if build:
+            self.build_architecture()
+            self.build_trainer()
+            self.build_submodels()
 
     # State Variables
     def get_submodel_state_variables(self) -> dict[str, Any]:
@@ -188,14 +196,14 @@ class BaseModel(BaseObject):
     def construct_default_architecture(self, **kwargs) -> None:
         self.architecture = self.default_architecture[0](**(self.default_architecture[1] | kwargs))
 
-    def build_architecture(self, **kwargs) -> None:
+    def build_architecture(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     # Trainer
     def construct_default_trainer(self, **kwargs) -> None:
         self.trainer = self.default_trainer[0](**(self.default_trainer[1] | kwargs))
 
-    def build_trainer(self, **kwargs) -> None:
+    def build_trainer(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     # Submodels
@@ -209,3 +217,6 @@ class BaseModel(BaseObject):
 
     def construct_subomodels_from_trainer(self) -> None:
         self.submodels.update({n: self.submodel_type(trainer=t) for n, t in self.trainer.subtrainers.items()})
+
+    def build_submodels(self, *args: Any, **kwargs: Any) -> None:
+        pass

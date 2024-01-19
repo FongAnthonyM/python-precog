@@ -21,14 +21,17 @@ from torch.nn import Parameter
 from torch import Tensor
 
 # Local Packages #
-from ....basis import ModelBasis
-from precog.architectures.torch.base.basemodulearchitecture import BaseModuleArchitecture
+from ....basis import ModelBasis, TorchModelBasis
+from ..bases import ModuleArchitecture
 
 
 # Definitions #
-class BaseNNMFModule(BaseModuleArchitecture):
+class BaseNNMFModule(ModuleArchitecture):
     # Class Attributes #
-    default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {"H": (), "W": ()}
+    default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {
+        "H": (TorchModelBasis, {}),  # Replace with Special Basis object
+        "W": (TorchModelBasis, {}),
+    }
     
     # Properties #
     @property
@@ -107,12 +110,12 @@ class BaseNNMFModule(BaseModuleArchitecture):
         
         # Construct Parent #
         super().construct(
-                bases=bases,
-                state_variables=state_variables,
-                create_defaults=create_defaults,
-                bases_kwargs=bases_kwargs,
-                **kwargs,
-            )
+            bases=bases,
+            state_variables=state_variables,
+            create_defaults=create_defaults,
+            bases_kwargs=bases_kwargs,
+            **kwargs,
+        )
 
         # Construct New #
         if isinstance(W, ModelBasis):

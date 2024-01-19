@@ -37,6 +37,7 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
 
     # Attributes #
     _padding_size: tuple[int, ...] = ()
+    _flip_axes: tuple[int, ...] = ()
     conv: CallableMultiplexer
 
     # Properties #
@@ -64,7 +65,7 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
         self.conv: CallableMultiplexer = CallableMultiplexer(register=self.conv_register)
 
         # Parent Attributes #
-        super().__init__(W=W, H=H, *args, **kwargs)
+        super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
@@ -106,21 +107,24 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
         # Construct New #
         if conv_type is not None:
             self.conv.select(conv_type)
-        elif self.W is not None:
+        elif self.W is not None and self.W.tensor is not None:
             self.convolution_setup()
 
     def convolution_setup(self):
         shape = self.W.tensor.shape
         ndim = len(shape)
-        self._padding_size = (shape[d] - 1 for d in range(2, len(shape)))
+        self._padding_size = tuple(shape[d] - 1 for d in range(2, len(shape)))
         if ndim == 3:
             self.conv.select("conv1d")
+            self._flip_axes = (2,)
         elif ndim == 4:
             self.conv.select("conv2d")
+            self._flip_axes = (2, 3)
         elif ndim == 5:
             self.conv.select("conv3d")
+            self._flip_axes = (2, 3, 4)
 
     # Instance Methods #
     def reconstruct(self, *args, **kwargs) -> Tensor:
         """Creates a reconstruction by taking the product of W and H."""
-        return self.conv(self.H.tensor, self.W.tensor, padding=self.padding_size)
+        return self.conv(self.H.tensor, self.W.tensor.flip(self._flip_axes), padding=self.padding_size)

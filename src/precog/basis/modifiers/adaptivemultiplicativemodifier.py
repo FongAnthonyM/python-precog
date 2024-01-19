@@ -77,7 +77,8 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         # New Attributes #
 
         # Parent Attributes #
-        super().__init__(*args, init=False, **kwargs)
+        Optimizer.__init__(self, params=kwargs.get("params", ({"params": ()},)), defaults=kwargs.get("defaults", {}))
+        BaseBasisModifier.__init__(self, *args, init=False, **kwargs)
 
         # Construct #
         if init:
@@ -123,7 +124,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
     @torch.enable_grad()
     def closure(self):
         self.zero_grad()
-        return self.module.forward()
+        return self.module.forward()  # Todo ask if this is loss
 
     @torch.no_grad()
     def step(

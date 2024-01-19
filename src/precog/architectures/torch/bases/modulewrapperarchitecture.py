@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import ClassVar, Any
+from typing import Any
 
 # Third-Party Packages #
 from torch.nn import Module
@@ -26,7 +26,7 @@ from .basemodulearchitecture import BaseModuleArchitecture
 # Definitions #
 # Classes #
 class ModuleWrapperArchitecture(BaseModuleArchitecture):
-    """A mixin abstract base class for Module and BaseArchitecture."""
+    """A mixin abstract bases class for Module and BaseArchitecture."""
     # Attributes #
     module: Module | None = None
 

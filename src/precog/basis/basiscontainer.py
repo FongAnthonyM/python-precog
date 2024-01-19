@@ -32,7 +32,7 @@ class BasisContainer(BaseObject):
 
     # Class Methods #
     @classmethod
-    def create_state_variables(cls, **kwargs):
+    def create_state_variables(cls, **kwargs) -> dict[str, Any]:
         return cls.default_state_variables | kwargs
 
     # Attributes #

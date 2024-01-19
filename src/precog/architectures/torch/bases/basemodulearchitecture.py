@@ -20,13 +20,13 @@ from torch.nn import Module
 
 # Local Packages #
 from ....basis import TorchModelBasis
-from ...base import BaseArchitecture
+from ...bases import BaseArchitecture
 
 
 # Definitions #
 # Classes #
 class BaseModuleArchitecture(BaseArchitecture):
-    """An abstract base class for BaseArchitecture using Module."""
+    """An abstract bases class for BaseArchitecture using Module."""
     # Attributes #
     basis_type: type[TorchModelBasis] = TorchModelBasis
     wrapper_architecture_type: type["BaseModuleArchitecture"]

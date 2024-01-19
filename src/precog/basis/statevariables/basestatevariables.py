@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ...header import *
 
 # Header #
 __author__ = __author__
@@ -13,8 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from abc import abstractmethod
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects import BaseDict
@@ -24,8 +23,9 @@ from baseobjects import BaseDict
 
 # Definitions #
 class BaseStateVariables(BaseDict):
-    """Abstract base class for state variables."""
-    default_state_variables: dict[str, Any] = {}
+    """Abstract bases class for state variables."""
+    # Class Attributes #
+    default_state_variables: ClassVar[dict[str, Any]] = {}
 
     # Magic Methods  #
     # Construction/Destruction
@@ -35,4 +35,3 @@ class BaseStateVariables(BaseDict):
 
         # Parent Attributes #
         super().__init__(dict, *args, init=False, **kwargs)
-

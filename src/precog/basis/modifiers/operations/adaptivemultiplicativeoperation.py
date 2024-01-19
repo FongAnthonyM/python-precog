@@ -2,7 +2,7 @@
 
 """
 # Package Header #
-from precog.header import *
+from ....header import *
 
 # Header #
 __author__ = __author__
@@ -28,7 +28,7 @@ class AdaptiveMultiplicativeOperation(BasisModifierOperation):
     modifier_type: type[AdaptiveMultiplicativeModifier] = AdaptiveMultiplicativeModifier
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | None = None, bases: dict | None = None, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:

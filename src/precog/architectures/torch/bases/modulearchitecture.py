@@ -27,7 +27,7 @@ from .modulewrapperarchitecture import ModuleWrapperArchitecture
 # Definitions #
 # Classes #
 class ModuleArchitecture(Module, BaseModuleArchitecture):
-    """A mixin abstract base class for Module and BaseArchitecture."""
+    """A mixin abstract bases class for Module and BaseArchitecture."""
     # Class Attributes #
     call_super_init: bool = True
 
