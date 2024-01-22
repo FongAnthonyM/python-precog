@@ -22,17 +22,12 @@ from torch import Tensor
 from torch.nn import Parameter
 
 # Local Packages #
-from ..statevariables import BaseStateVariables
-from .modelbasis import ModelBasis
+from ..bases import ModelBasis
 
 
 # Definitions #
 # Classes #
 class TorchModelBasis(ModelBasis):
-    # Attributes #
-    state_variables_type: type[BaseStateVariables] = BaseStateVariables
-    default_component_types: dict[str, tuple[type, dict[str, Any]]] = {}
-
     # Magic Methods  #
     # Construction/Destruction
     def __init__(
@@ -92,7 +87,6 @@ class TorchModelBasis(ModelBasis):
             **kwargs,
         )
 
-    # Todo: Move to subclass
     def create_tensor(self, size: Iterable[int], requires_grad: bool = True, **kwargs: Any) -> Tensor:
         """Create an empty tensor which contains values.
 
@@ -101,5 +95,5 @@ class TorchModelBasis(ModelBasis):
             requires_grad:
             **kwargs: The keyword arguments for creating an empty tensor.
         """
-        self.tensor = Parameter(torch.rand(*size, **kwargs).abs(), requires_grad=requires_grad)
+        self.tensor = Parameter(torch.rand(*size, **kwargs), requires_grad=requires_grad)
         return self.tensor

@@ -19,7 +19,7 @@ from typing import ClassVar
 from torch.nn import Module
 
 # Local Packages #
-from ....basis import TorchModelBasis
+from ....basis.torch import TorchModelBasis
 from ...bases import BaseArchitecture
 
 

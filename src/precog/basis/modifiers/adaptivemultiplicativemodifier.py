@@ -33,7 +33,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
     default_state_variables: ClassVar[dict[str, Any]] = {
         "theta": None,
         "beta": None,
-        "penalty": None,
+        "penalty": None,  # Todo: Add this later
         "pos": None,  # torch.zeros_like(theta, memory_format=torch.preserve_format)
         "neg": None,
         "step": 0,
@@ -124,7 +124,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
     @torch.enable_grad()
     def closure(self):
         self.zero_grad()
-        return self.module.forward()  # Todo ask if this is loss
+        return self.module.forward()
 
     @torch.no_grad()
     def step(
@@ -199,9 +199,8 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         _neg = torch.zeros_like(tensor)
         _pos = torch.zeros_like(tensor)
 
-        # Close the optimization loop by retrieving the
-        # observed data and prediction
-        WH = closure()
+        # Close the optimization loop by retrieving the prediction
+        x_hat = closure()
 
         # Multiplicative update coefficients for beta-divergence
         #      Marmin, A., Goulart, J.H.D.M. and Févotte, C., 2021.
@@ -210,29 +209,29 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         #      arXiv preprint arXiv:2106.15214.
         if beta == 2:
             output_neg = x
-            output_pos = WH
+            output_pos = x_hat
         elif beta == 1:
-            output_neg = x / WH.add(self.precision)
-            output_pos = torch.ones_like(WH)
+            output_neg = x / x_hat.add(self.precision)
+            output_pos = torch.ones_like(x_hat)
         elif beta == 0:
-            WH_eps = WH.add(self.precision)
+            WH_eps = x_hat.add(self.precision)
             output_pos = WH_eps.reciprocal_()
             output_neg = output_pos.square().mul_(x)
         else:
-            WH_eps = WH.add(self.precision)
+            WH_eps = x_hat.add(self.precision)
             output_neg = WH_eps.pow(beta - 2).mul_(x)
             output_pos = WH_eps.pow_(beta - 1)
 
         # Numerator (negative factor) gradient
         # Retain graph so that backward can be run again using the
         # positive component.
-        WH.backward(output_neg, retain_graph=True)
+        x_hat.backward(output_neg, retain_graph=True)
         __neg = (torch.clone(tensor.grad).relu_())
         tensor.grad.zero_()
 
         # Denominator (positive factor) gradient
         # The parameter gradient holds both components (positive - negative)
-        WH.backward(output_pos)
+        x_hat.backward(output_pos)
         __pos = (torch.clone(tensor.grad).relu_())
         # p.grad.add_(-_neg)
         tensor.grad.zero_()

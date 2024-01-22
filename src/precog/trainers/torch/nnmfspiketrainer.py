@@ -36,8 +36,6 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
 
     # Attributes #
-    local_state_variables: dict[str, Any]
-
     W_modifier_type: type = AdaptiveMultiplicativeOperation
     H_modifier_type: type = AdaptiveMultiplicativeOperation
     W_refiner_type: type = None
@@ -52,14 +50,6 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     _H_architecture: BaseNNMFModule | None = None
 
     # Properties #
-    @property
-    def state_variables(self) -> dict[str, Any]:
-        return self.get_state_variables()
-
-    @state_variables.setter
-    def state_variables(self, value: dict[str, Any]) -> None:
-        self.local_state_variables = value
-
     @property
     def W_architecture(self) -> BaseNNMFModule | None:
         if (op := self.operations.get("W_modifier", None)) is not None:
@@ -202,13 +192,14 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
 
     # State Variables
     def get_state_variables(self) -> dict[str, Any]:
-        return {
-            "local": self.local_state_variables,
+        state_vars = super().get_state_variables()
+        state_vars.update({
             "W_modifer": {} if (W := self.operations.get("W_modifier", None)) is None else W.state_variables,
             "H_modifer": {} if (H := self.operations.get("H_modifier", None)) is None else H.state_variables,
             "W_refiner": {} if (w := self.operations.get("W_refiner", None)) is None else w.state_variables,
             "H_refiner": {} if (h := self.operations.get("H_refiner", None)) is None else h.state_variables,
-        }
+        })
+        return state_vars
 
     # Modifiers
     def create_W_modifier_kwargs(self, **kwargs: Any) -> dict[str, Any]:

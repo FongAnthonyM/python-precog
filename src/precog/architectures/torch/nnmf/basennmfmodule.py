@@ -21,7 +21,8 @@ from torch.nn import Parameter
 from torch import Tensor
 
 # Local Packages #
-from ....basis import ModelBasis, TorchModelBasis
+from ....basis import ModelBasis
+from ....basis.torch import NonNegativeBasis
 from ..bases import ModuleArchitecture
 
 
@@ -29,8 +30,8 @@ from ..bases import ModuleArchitecture
 class BaseNNMFModule(ModuleArchitecture):
     # Class Attributes #
     default_bases: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {
-        "H": (TorchModelBasis, {}),  # Replace with Special Basis object
-        "W": (TorchModelBasis, {}),
+        "H": (NonNegativeBasis, {}),  # Replace with Special Basis object
+        "W": (NonNegativeBasis, {}),
     }
     
     # Properties #

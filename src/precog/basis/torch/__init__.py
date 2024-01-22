@@ -13,4 +13,5 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .modelbasis import ModelBasis
+from .torchmodelbasis import TorchModelBasis
+from .nonnegativebasis import NonNegativeBasis

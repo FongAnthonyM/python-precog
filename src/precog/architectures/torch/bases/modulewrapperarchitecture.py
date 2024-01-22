@@ -19,7 +19,8 @@ from typing import Any
 from torch.nn import Module
 
 # Local Packages #
-from ....basis import ModelBasis, TorchModelBasis
+from ....basis import ModelBasis
+from ....basis.torch import TorchModelBasis
 from .basemodulearchitecture import BaseModuleArchitecture
 
 

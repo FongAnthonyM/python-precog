@@ -55,7 +55,44 @@ class TestSpikeDetector(ClassTest):
     subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
     subject_id = "EC0212"
 
-    def test_constrcution(self):
+    def closest_square(self, n):
+        n = int(n)
+        i = int(np.ceil(np.sqrt(n)))
+        while True:
+            if (n % i) == 0:
+                break
+            i += 1
+        assert n == (i * (n // i))
+        return i, n // i
+
+    def make_bipolar(self, lead_group):
+        for l_name in lead_group:
+            sel_lead = lead_group[l_name]
+            n_contact = len(sel_lead['IDs'])
+            if 'grid' in sel_lead['Type']:
+                n_row, n_col = self.closest_square(n_contact)
+            else:
+                n_row, n_col = [n_contact, 1]
+
+            CA = np.arange(len(sel_lead['Contacts'])).reshape((n_row, n_col), order='F')
+
+            lead_group[l_name]['Contact_Pairs_ix'] = []
+
+            if n_row > 1:
+                for bp1, bp2 in zip(CA[:-1, :].flatten(), CA[1:, :].flatten()):
+                    lead_group[l_name]['Contact_Pairs_ix'].append(
+                        (sel_lead['IDs'][bp1],
+                         sel_lead['IDs'][bp2]))
+
+            if n_col > 1:
+                for bp1, bp2 in zip(CA[:, :-1].flatten(), CA[:, 1:].flatten()):
+                    lead_group[l_name]['Contact_Pairs_ix'].append(
+                        (sel_lead['IDs'][bp1],
+                         sel_lead['IDs'][bp2]))
+
+        return lead_group
+
+    def test_construction(self):
         detector = SpikeDetector(preprocessing={"sample_rate": 1024})
         bases = detector.model.get_bases()
         state_variables = detector.model.get_state_variables()
@@ -95,6 +132,11 @@ class TestSpikeDetector(ClassTest):
         arc_bases = spike_detector.model.bases["architecture"]
         arc_bases["W"].create_tensor(size=(remap.shape[1], n_motifs, window_size))
         arc_bases["H"].create_tensor(size=(1, n_motifs, int(sample_rate * 10) - window_size + 1))
+
+        # Set State Variables
+        train_vars = spike_detector.model.state_variables["trainer"]
+        train_vars["H_modifier"].update({ })
+        train_vars["M_modifier"].update({ })
 
         # Select Time Range
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
