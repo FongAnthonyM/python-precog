@@ -38,4 +38,4 @@ class AdaptiveMultiplicativeOperation(BasisModifierOperation):
         Returns:
             The result of the evaluation.
         """
-        return self.modifier.update(x=data, *args, **kwargs)
+        return None if data is None else self.modifier.update(x=data, *args, **kwargs)

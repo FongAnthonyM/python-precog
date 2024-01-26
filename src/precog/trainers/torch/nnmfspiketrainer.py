@@ -143,6 +143,29 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         **kwargs: Any,
     ) -> None:
         # New Setup #
+        if state_variables is not None:
+            if (wm_sv := state_variables.get("w_modifier", None)) is not None:
+                if (_wm_sv := self.W_modifier_kwargs.get("state_variables", None)) is None:
+                    _wm_sv = self.W_modifier_kwargs["state_variables"] = {}
+                _wm_sv.update(wm_sv)
+
+            if (wr_sv := state_variables.get("w_refiner", None)) is not None:
+                if (_wr_sv := self.W_refiner_kwargs.get("state_variables", None)) is None:
+                    _wr_sv = self.W_refiner_kwargs["state_variables"] = {}
+                _wr_sv.update(wr_sv)
+
+            if (hm_sv := state_variables.get("h_modifier", None)) is not None:
+                if (_hm_sv := self.H_modifier_kwargs.get("state_variables", None)) is None:
+                    _hm_sv = self.H_modifier_kwargs["state_variables"] = {}
+                _hm_sv.update(hm_sv)
+
+            if (hr_sv := state_variables.get("h_refiner", None)) is not None:
+                if (_hr_sv := self.H_refiner_kwargs.get("state_variables", None)) is None:
+                    _hr_sv = self.H_refiner_kwargs["state_variables"] = {}
+                _hr_sv.update(hr_sv)
+
+            state_variables = state_variables.get("local", None)
+
         if operations is None:
             operations = {}
         

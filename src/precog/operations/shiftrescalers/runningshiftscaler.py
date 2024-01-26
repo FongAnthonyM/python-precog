@@ -33,6 +33,7 @@ blank_arg = object()
 class RunningShiftScaler(BaseOperation):
     default_input_names: tuple[str, ...] = ("data",)
     default_output_names: tuple[str, ...] = ("ss_data",)
+    default_burn_in: str = "burn_in_iter"
     default_shift_rescale: str = "shift_rescale_modified_zscore"
     default_forget: str = "exponential_forget"
 
@@ -45,6 +46,7 @@ class RunningShiftScaler(BaseOperation):
         mean: np.ndarray | None = None,
         variance: np.ndarray | None = None,
         threshold: int | float | None = None,
+        burn_in: int | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -66,8 +68,12 @@ class RunningShiftScaler(BaseOperation):
 
         self.previous_count: int = 0
 
+        self.burn_in_count: int = 0
+        self.burn_in_threshold: int = 0
+
         self._forget_factor: float | None = None
 
+        self.burn_in: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_burn_in)
         self.forget: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_forget)
         self.shift_rescale: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_shift_rescale)
 
@@ -82,6 +88,7 @@ class RunningShiftScaler(BaseOperation):
                 mean,
                 variance,
                 threshold,
+                burn_in,
                 axis,
                 *args,
                 init_io=init_io,
@@ -112,6 +119,7 @@ class RunningShiftScaler(BaseOperation):
         mean: np.ndarray | None = None,
         variance: np.ndarray | None = None,
         threshold: int | float | None = None,
+        burn_in: int | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -146,6 +154,9 @@ class RunningShiftScaler(BaseOperation):
         if threshold is not None:
             self.threshold = threshold
 
+        if burn_in is not None:
+            self.burn_in_threshold = burn_in
+
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
@@ -167,6 +178,14 @@ class RunningShiftScaler(BaseOperation):
         if previous_sum is not None:
             self.previous_mean = previous_sum
 
+    # Burn-in
+    def burn_in_iter(self) -> bool:
+        if self.burn_in_count < self.burn_in_threshold:
+            self.burn_in_count += 1
+            return True
+        else:
+            return False
+
     # Forgetting
     def constant_forget(self, index, **kwargs):
         return 1 / (self.previous_count + (index + 1))
@@ -184,7 +203,7 @@ class RunningShiftScaler(BaseOperation):
             shifted_data[t_slices] = data[t_slices] - self.previous_mean
             self.previous_mean = self.previous_mean + shifted_data[t_slices] * self.forget(index=i)
         self.previous_count += data.shape[-1]
-        return shifted_data
+        return None if self.burn_in else shifted_data
 
     def shift_decaying_mean(self, data) -> np.ndarray:
         # https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf
@@ -208,7 +227,7 @@ class RunningShiftScaler(BaseOperation):
 
         # Shift Data
         shifted_data = data - new_mean
-        return shifted_data
+        return None if self.burn_in else shifted_data
 
     def shift_rescale_zscore(self, data) -> np.ndarray:
         scaled_data = np.empty_like(data)
@@ -233,7 +252,7 @@ class RunningShiftScaler(BaseOperation):
             self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
 
         self.previous_count += data.shape[-1]
-        return scaled_data
+        return None if self.burn_in else scaled_data
 
     def shift_rescale_modified_zscore(self, data) -> np.ndarray:
         scaled_data = np.empty_like(data)
@@ -262,7 +281,7 @@ class RunningShiftScaler(BaseOperation):
             self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
 
         self.previous_count += data.shape[-1]
-        return scaled_data
+        return None if self.burn_in else scaled_data
 
     # Evaluate
     def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:

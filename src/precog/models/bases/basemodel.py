@@ -64,8 +64,8 @@ class BaseModel(BaseObject):
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
         state_variables: dict[str, Any] | None = None,
-        architecture: BaseArchitecture | None = None,
-        trainer: BaseTrainer | None = None,
+        architecture: BaseArchitecture | dict[str, Any] | None = None,
+        trainer: BaseTrainer | dict[str, Any] | None = None,
         submodels: dict[str, "BaseModel"] | None = None,
         *args: Any,
         init: bool = True,
@@ -98,8 +98,8 @@ class BaseModel(BaseObject):
         self,
         bases: dict[str, ModelBasis | dict[str, Any]] | None = None,
         state_variables: dict[str, Any] | None = None,
-        architecture: BaseArchitecture | None = None,
-        trainer: BaseTrainer | None = None,
+        architecture: BaseArchitecture | dict[str, Any] | None = None,
+        trainer: BaseTrainer | dict[str, Any] | None = None,
         submodels: dict[str, "BaseModel"] | None = None,
         build: bool = True,
         **kwargs,
@@ -126,19 +126,29 @@ class BaseModel(BaseObject):
             self.local_bases.update(local_bases)
         
         # Contained Objects
-        if architecture is not None:
+        if isinstance(architecture, BaseArchitecture):
             self.architecture = architecture
+        elif isinstance(architecture, dict):
+            a_bases = bases.get("architecture", {}) | architecture.get("bases", {})
+            a_state_variables = state_variables.get("architecture", {}) | architecture.get("state_variables", {})
+            a_kwargs = architecture | {"bases": a_bases or None, "state_variables": a_state_variables or None}
+            self.construct_default_architecture(**a_kwargs)
         else:
             self.construct_default_architecture(
                 bases=bases.get("architecture", None), 
                 state_variables=state_variables.get("architecture", None),
             )
 
-        if trainer is not None:
+        if isinstance(trainer, BaseTrainer):
             self.trainer = trainer
+        elif isinstance(trainer, dict):
+            t_bases = bases.get("trainer", {}) | trainer.get("bases", {})
+            t_state_variables = state_variables.get("trainer", {}) | trainer.get("state_variables", {})
+            t_kwargs = trainer | {"bases": t_bases or None, "state_variables": t_state_variables or None}
+            self.construct_default_trainer(**t_kwargs)
         else:
             self.construct_default_trainer(
-                bases=bases.get("trainer", None), 
+                bases=bases.get("trainer", None),
                 state_variables=state_variables.get("trainer", None),
             )
 

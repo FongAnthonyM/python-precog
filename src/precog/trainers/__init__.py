@@ -14,3 +14,4 @@ __email__ = __email__
 # Imports #
 # Local Packages #
 from .bases import *
+from .ensembletrainer import EnsembleTrainer

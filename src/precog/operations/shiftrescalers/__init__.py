@@ -13,4 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
+from .unitsumnormalization import UnitSumNormalization
+from .recenter import Recenter
+from .normnormalization import NormNormalization
 from .runningshiftscaler import RunningShiftScaler, blank_arg

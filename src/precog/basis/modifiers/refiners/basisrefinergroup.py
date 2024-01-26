@@ -1,8 +1,8 @@
-"""nnmfspiketrainer.py
+"""basisrefinergroup.py
 
 """
 # Package Header #
-from ..header import *
+from ....header import *
 
 # Header #
 __author__ = __author__
@@ -19,26 +19,32 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 
 # Local Packages #
-from ..operations import BaseOperation, OperationGroup
-from ..operations.operation.io import IOManager, IORouter, IODelegator
-from ..architectures.torch import BaseNNMFModule, NNMFDModule
-from ..basis import ModelBasis
-from ..basis.modifiers import AdaptiveMultiplicativeModifier
-from ..trainers.bases import BaseTrainerOperation
+from ....operations import BaseOperation, OperationGroup
+from ....operations.operation.io import IOManager
+from ....basis import ModelBasis
+from ....basis.modifiers import AdaptiveMultiplicativeModifier
+from ....basis.modifiers.operations import AdaptiveMultiplicativeOperation
+from .basisrefiner import BasisRefiner
 
 
 # Definitions #
 # Classes #
-class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
+class NNMFSpikeTrainer(OperationGroup, BasisRefiner):
     # Class Attributes #
-    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
-    default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
+    default_input_names: ClassVar[tuple[str, ...]] = ("bases",)
+    default_output_names:  ClassVar[tuple[str, ...]] = ("m_bases",)
+
+    # Attributes #
+    sparsifier_type: type = None
+    smoother_type: type = None
+    standardizer_type: type = None
+
+    # Properties #
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
         *args: Any,
         operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
@@ -51,13 +57,14 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
+        # New Attributes #
+
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
 
         # Construct #
         if init:
             self.construct(
-                subtrainers=subtrainers,
                 bases=bases,
                 state_variables=state_variables,
                 create_defaults=create_defaults,
@@ -73,7 +80,6 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
     # Constructors/Destructors
     def construct(
         self,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
         *args: Any,
         operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
@@ -86,9 +92,6 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         **kwargs: Any,
     ) -> None:
         # New Setup #
-        if subtrainers is not None:
-            self.subtrainers.update(subtrainers)
-            operations.update(subtrainers)
 
         # Construct Parent #
         super().construct(
@@ -106,33 +109,40 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
     # State Variables
     def get_state_variables(self) -> dict[str, Any]:
         state_vars = super().get_state_variables()
-        state_vars["subtrainers"] = {n: s.state_variables for n, s in self.subtrainers.items()}
+        state_vars.update({})
         return state_vars
 
     # Operations
-    def create_operations(self, *args: Any, override: bool = False, **kwargs: Any) -> None:
-        """Creates the inner operations.
+    def create_operations(
+        self,
+        sparsifier_kwargs: dict[str, Any] | None = None,
+        smoother_kwargs: dict[str, Any] | None = None,
+        standardizer_kwargs: dict[str, Any] | None = None,
+        *args: Any,
+        override: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        # Create Operations
+        if "sparsifier" not in self.operations or override:
+            self.operations["sparsifier"] = self.sparsifier_type(**(sparsifier_kwargs or {}))
 
-        Args:
-            *args: The arguments for creating the inner operations.
-            override: Determines if the inner operations will be overridden.
-            **kwargs: The keyword arguments for creating the inner operations.
-        """
-        for name, trainer in self.subtrainers.items():
-            if name not in self.operations or override:
-                self.operations[name] = trainer
+        if self.smoother_type is not None and ("smoother" not in self.operations or override):
+            self.operations["smoother"] = self.smoother_type(**(smoother_kwargs or {}))
+
+        if "standardizer" not in self.operations or override:
+            self.operations["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
 
     # IO
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
-        # Get IO of Each Operation
-        input_data = {}
-        output_bases = {}
-        for name, operation in self.operations.items():
-            input_data[name] = operation.inputs["data"]
-            output_bases[name] = operation.outputs["bases"]
+        # Get Operations
+        sparsifier = self.operations["sparsifier"]
+        smoother = self.operations.get("smoother", None)
+        standardizer = self.operations["standardizer"]
 
         # Set Input
-        self.inputs["data"] = IORouter(io_=input_data)
+        self.inputs["bases"] = sparsifier.inputs["data"]
+
+        # Inner IO
 
         # Set Output
-        self.outputs["bases"] = IORouter(io_=output_bases)
+        standardizer.outputs["m_bases"] = self.outputs["bases"]

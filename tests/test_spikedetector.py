@@ -25,6 +25,9 @@ import numpy as np
 from ucsfbids import Subject
 
 # Local Packages #
+from src.precog.models import EnsembleModel
+from src.precog.models.torch import NNMFDTorchModel
+from src.precog.basis.torch import NonNegativeBasis
 from src.precog.pipelines import SpikeDetector
 
 
@@ -92,6 +95,49 @@ class TestSpikeDetector(ClassTest):
 
         return lead_group
 
+    def make_bipolar(self, montage):
+        groups = []
+        g_name = montage["name"][0].strip("1234567890")
+        f_index = 0
+        for i, row in enumerate(montage):
+            if (new_name := row["name"].strip("1234567890")) != g_name:
+                groups.append((g_name, montage[f_index:i]))
+                g_name = new_name
+                f_index = i
+        groups.append((g_name, montage[f_index:len(montage)]))
+
+        pb_groups = {}
+        remap_contacts = []
+        cn_contacts = 0
+        for (name, group) in groups:
+            type_ = group["group"][0]
+            c_names = group["names"]
+            n_contact = len(group)
+            n_row, n_col = self.closest_square(n_contact) if 'grid' in type_ else (n_contact, 1)
+
+            CA = np.arange(n_contact).reshape((n_row, n_col), order='F')
+
+            pb_groups[name] = bp_contacts = []
+
+            if n_row > 1:
+                for bp1, bp2 in zip(CA[:-1, :].flatten(), CA[1:, :].flatten()):
+                    bp_contacts.append((c_names[bp1], c_names[bp2], bp1, bp2))
+                    remap_contacts.append((bp1 + cn_contacts, bp2 + cn_contacts))
+
+            if n_col > 1:
+                for bp1, bp2 in zip(CA[:, :-1].flatten(), CA[:, 1:].flatten()):
+                    bp_contacts.append((c_names[bp1], c_names[bp2], bp1, bp2))
+                    remap_contacts.append((bp1 + cn_contacts, bp2 + cn_contacts))
+
+            cn_contacts += n_contact
+
+        remap = np.zeros((len(montage), len(remap_contacts)))
+        for i, (a, c) in enumerate(remap_contacts):
+            remap[a, i] = 1
+            remap[c, i] = -1
+
+        return pb_groups, remap
+
     def test_construction(self):
         detector = SpikeDetector(preprocessing={"sample_rate": 1024})
         bases = detector.model.get_bases()
@@ -112,31 +158,37 @@ class TestSpikeDetector(ClassTest):
         # Remap Channels
         sample_rate = cdfs.data.sample_rates[1]
         montage = ieeg.load_electrodes()
+        b_groups, remap = self.make_bipolar(montage)
 
-        max_channels = np.array(cdfs.data.shapes).max(0)[1]
-        used_channels = len(montage["name"][:-4])
-        remap = np.zeros((max_channels, used_channels))
-        remap[:used_channels, :] = np.identity(used_channels)  # Remap Channels from Montage
+        # max_channels = np.array(cdfs.data.shapes).max(0)[1]
+        # used_channels = len(montage["name"][:-4])
+        # remap = np.zeros((max_channels, used_channels))
+        # remap[:used_channels, :] = np.identity(used_channels)  # Remap Channels from Montage
+
+        # Create Tensor Info
+        window_size = int(sample_rate * 0.250)
+        n_motifs = 10
+        w_size = (remap.shape[1], n_motifs, window_size)
+        h_size = (1, n_motifs, int(sample_rate * 10) - window_size + 1)
+
+        # Create Models
+        submodels = {}
+
+        submodels["first_model"] = NNMFDTorchModel(
+            architecture={"W": NonNegativeBasis(size=w_size), "H": NonNegativeBasis(size=h_size)},
+            trainer={"state_variables": {"W_modifier", {}, "H_modifier", {}}},
+        )
+
+        model = EnsembleModel(submodels=submodels)
 
         # Create Pipeline
         spike_detector = SpikeDetector(
+            model=model,
             streamer={"cdfs": cdfs},
             remapper={"map_matrix": remap},
             preprocessing={"sample_rate": sample_rate},
-            standardizer={"forget_factor": 10**-6, "shift_scale": "shift_decaying_mean"},
+            standardizer={"forget_factor": 10**-6, "burn_in": 10},  # Todo: Handle burn in (automatic)
         )
-
-        # Create Tensors
-        window_size = int(sample_rate * 0.250)
-        n_motifs = 10
-        arc_bases = spike_detector.model.bases["architecture"]
-        arc_bases["W"].create_tensor(size=(remap.shape[1], n_motifs, window_size))
-        arc_bases["H"].create_tensor(size=(1, n_motifs, int(sample_rate * 10) - window_size + 1))
-
-        # Set State Variables
-        train_vars = spike_detector.model.state_variables["trainer"]
-        train_vars["H_modifier"].update({ })
-        train_vars["M_modifier"].update({ })
 
         # Select Time Range
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
