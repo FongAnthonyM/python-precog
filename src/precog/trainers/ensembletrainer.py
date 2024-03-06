@@ -40,11 +40,12 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         self,
         subtrainers: dict[str, BaseTrainerOperation] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
+        operations: Mapping[str, BaseOperation] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -62,6 +63,7 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
                 state_variables=state_variables,
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
+                subtrainers_kwargs=subtrainers_kwargs,
                 operations=operations,
                 init_io=init_io,
                 sets_up=sets_up,
@@ -75,39 +77,31 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         self,
         subtrainers: dict[str, BaseTrainerOperation] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
+        operations: Mapping[str, BaseOperation] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
         **kwargs: Any,
     ) -> None:
-        # New Setup #
-        if subtrainers is not None:
-            self.subtrainers.update(subtrainers)
-            operations.update(subtrainers)
-
-        # Construct Parent #
+        # Construct Parents #
         super().construct(
             bases=bases,
             state_variables=state_variables,
+            subtrainers=subtrainers,
             create_defaults=create_defaults,
             bases_kwargs=bases_kwargs,
+            subtrainers_kwargs=subtrainers_kwargs,
             operations=operations,
             init_io=init_io,
             sets_up=sets_up,
             setup_kwargs=setup_kwargs,
             **kwargs,
         )
-
-    # State Variables
-    def get_state_variables(self) -> dict[str, Any]:
-        state_vars = super().get_state_variables()
-        state_vars["subtrainers"] = {n: s.state_variables for n, s in self.subtrainers.items()}
-        return state_vars
 
     # Operations
     def create_operations(self, *args: Any, override: bool = False, **kwargs: Any) -> None:

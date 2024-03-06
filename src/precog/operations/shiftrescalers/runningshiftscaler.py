@@ -14,6 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
+from copy import deepcopy
 from typing import Any
 
 # Third-Party Packages #
@@ -62,7 +63,7 @@ class RunningShiftScaler(BaseOperation):
         self.previous_mean_fill_value: float | int = 0
 
         self.previous_variance: np.ndarray | None = None
-        self.previous_variance_fill_value: float | int = 0
+        self.previous_variance_fill_value: float | int = 10 ** -12
 
         self.threshold: int | float = 10 ** 12
 
@@ -73,7 +74,7 @@ class RunningShiftScaler(BaseOperation):
 
         self._forget_factor: float | None = None
 
-        self.burn_in: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_burn_in)
+        self.is_burning_in: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_burn_in)
         self.forget: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_forget)
         self.shift_rescale: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_shift_rescale)
 
@@ -203,7 +204,7 @@ class RunningShiftScaler(BaseOperation):
             shifted_data[t_slices] = data[t_slices] - self.previous_mean
             self.previous_mean = self.previous_mean + shifted_data[t_slices] * self.forget(index=i)
         self.previous_count += data.shape[-1]
-        return None if self.burn_in else shifted_data
+        return None if self.is_burning_in() else shifted_data
 
     def shift_decaying_mean(self, data) -> np.ndarray:
         # https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf
@@ -227,7 +228,7 @@ class RunningShiftScaler(BaseOperation):
 
         # Shift Data
         shifted_data = data - new_mean
-        return None if self.burn_in else shifted_data
+        return None if self.is_burning_in() else shifted_data
 
     def shift_rescale_zscore(self, data) -> np.ndarray:
         scaled_data = np.empty_like(data)
@@ -252,7 +253,7 @@ class RunningShiftScaler(BaseOperation):
             self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
 
         self.previous_count += data.shape[-1]
-        return None if self.burn_in else scaled_data
+        return None if self.is_burning_in() else scaled_data
 
     def shift_rescale_modified_zscore(self, data) -> np.ndarray:
         scaled_data = np.empty_like(data)
@@ -281,7 +282,7 @@ class RunningShiftScaler(BaseOperation):
             self.previous_variance = (1 - forget_factor) * self.previous_variance + forget_factor * delta_variance
 
         self.previous_count += data.shape[-1]
-        return None if self.burn_in else scaled_data
+        return None if self.is_burning_in() else scaled_data
 
     # Evaluate
     def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
@@ -294,6 +295,7 @@ class RunningShiftScaler(BaseOperation):
         Returns:
             The result of the evaluation.
         """
+        # Input
         if self.previous_mean is None:
             shape = [slice(None)] * len(data.shape)
             shape[self.axis] = 0
@@ -302,4 +304,16 @@ class RunningShiftScaler(BaseOperation):
             shape = list(data.shape)
             shape.pop(self.axis)
             self.create_previous_std(shape, data.dtype)
-        return self.shift_rescale(data)
+
+        # Shift Scaling
+        ss_data = self.shift_rescale(data)
+
+        # Output
+        if ss_data is None:
+            return None
+        elif hasattr(data, "data"):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = ss_data
+            return data_deep
+        else:
+            return ss_data

@@ -16,6 +16,7 @@ __email__ = __email__
 from typing import ClassVar, Any, Callable, Optional
 
 # Third-Party Packages #
+import numpy as np
 import torch
 from torch import Tensor
 from torch.optim import Optimizer
@@ -150,6 +151,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
             neg:
             step:
         """
+        # Resolve State Variables
         if theta is None:
             theta = self.state_variables["theta"]
         else:
@@ -178,65 +180,56 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         if step is None:
             step = self.state_variables["step"]
 
-        # Make sure the closure is always called with grad enabled
-        if closure is None:
-            closure = self.closure
-        else:
-            closure = torch.enable_grad()(closure)
-
-        # Cache the gradient status for reversion at the end of the function
+        # Select Basis Tensor to Update #
         tensor = self.all_bases[self.updating_basis_name].tensor
+        # Cache the gradient status
         required_grad = tensor.requires_grad
         tensor.requires_grad = True
 
-        ### FIRST PASS -- Accumulate Positive/Negative Gradient Contributions
-        # Iterate over each parameter group (specifies order of optimization)
+        # Create Optimizer #
+        # Ensure the closure is always called with grad enabled
+        closure = self.closure if closure is None else torch.enable_grad()(closure)
 
-        # Iterate over models parameters within the group
-        # if a gradient is not required then that parameter is "fixed"
+        # Create optimizer by closing the optimization loop
+        module_optimizer = closure()
 
-        # Initialize temporary gradient components
+        # Initialize temporary gradient components #
         _neg = torch.zeros_like(tensor)
         _pos = torch.zeros_like(tensor)
-
-        # Close the optimization loop by retrieving the prediction
-        x_hat = closure()
 
         # Multiplicative update coefficients for beta-divergence
         #      Marmin, A., Goulart, J.H.D.M. and Févotte, C., 2021.
         #      Joint Majorization-Minimization for Nonnegative Matrix
         #      Factorization with the $\beta $-divergence.
         #      arXiv preprint arXiv:2106.15214.
-        if beta == 2:
-            output_neg = x
-            output_pos = x_hat
-        elif beta == 1:
-            output_neg = x / x_hat.add(self.precision)
-            output_pos = torch.ones_like(x_hat)
-        elif beta == 0:
-            WH_eps = x_hat.add(self.precision)
-            output_pos = WH_eps.reciprocal_()
-            output_neg = output_pos.square().mul_(x)
-        else:
-            WH_eps = x_hat.add(self.precision)
-            output_neg = WH_eps.pow(beta - 2).mul_(x)
-            output_pos = WH_eps.pow_(beta - 1)
+        match beta:
+            case 0:
+                optimizer_eps = module_optimizer.add(self.precision)
+                output_pos = optimizer_eps.reciprocal_()
+                output_neg = output_pos.square().mul_(x)
+            case 1:
+                optimizer_eps = module_optimizer.add(self.precision)
+                output_pos = torch.ones_like(module_optimizer)
+                output_neg = np.expand_dims(np.moveaxis(x, -1, 0), 0) / optimizer_eps.detach().numpy()
+            case 2:
+                output_pos = module_optimizer
+                output_neg = np.expand_dims(np.moveaxis(x, -1, 0), 0)
+            case _:
+                optimizer_eps = module_optimizer.add(self.precision)
+                output_pos = optimizer_eps.pow_(beta - 1)
+                output_neg = optimizer_eps.pow(beta - 2).mul_(x)
 
-        # Numerator (negative factor) gradient
-        # Retain graph so that backward can be run again using the
-        # positive component.
-        x_hat.backward(output_neg, retain_graph=True)
-        __neg = (torch.clone(tensor.grad).relu_())
-        tensor.grad.zero_()
+        # Generate Numerator (Negative Factor) #
+        module_optimizer.backward(torch.from_numpy(output_neg), retain_graph=True)  # Optimize module to data, retain original unoptimized bases
+        __neg = torch.clone(tensor.grad).relu_()  # Get gradient between unoptimized and optimized target basis
+        tensor.grad.zero_()  # Reset optimizer bases
 
-        # Denominator (positive factor) gradient
+        # Generator Denominator (positive factor) #
         # The parameter gradient holds both components (positive - negative)
-        x_hat.backward(output_pos)
-        __pos = (torch.clone(tensor.grad).relu_())
-        # p.grad.add_(-_neg)
-        tensor.grad.zero_()
-
-        # Include penalty
+        module_optimizer.backward(output_pos)
+        __pos = torch.clone(tensor.grad).relu_()  # Get gradient between unoptimized and optimized target basis
+        tensor.grad.add_(-__neg)
+        # Apply Penalty (Regulation)
         __pos.add_(penalty)
 
         # Add to the running estimate
@@ -250,7 +243,7 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
         neg.mul_(1 - theta).add_(_neg.mul_(theta))
         pos.mul_(1 - theta).add_(_pos.mul_(theta))
 
-        # Avoid ill-conditioned, zero-valued multipliers
+        # Prevent zero-valued multipliers
         neg.add_(self.precision)
         pos.add_(self.precision)
 

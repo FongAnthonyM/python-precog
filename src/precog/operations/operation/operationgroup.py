@@ -195,7 +195,13 @@ class OperationGroup(BaseOperation):
         self.inputs.put_all(**kwargs)
         self.execute()
         outputs = self.outputs.get_items(self.output_names)
-        return outputs if len(outputs) > 1 else outputs[0]
+        match len(outputs):
+            case 0:
+                return None
+            case 1:
+                return outputs[0]
+            case _:
+                return outputs
 
     # Execute
     def execute_all(self) -> None:

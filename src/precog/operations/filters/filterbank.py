@@ -13,6 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
+from copy import deepcopy
 from itertools import chain
 from typing import ClassVar, Any
 
@@ -149,6 +150,16 @@ class FilterBank(BaseOperation):
         Returns:
             The result of the evaluation.
         """
+        # Input
+        data_deep = data.dataless_proxy_leaf_copy() if hasattr(data, "data") else None
+
+        # Filtering
         for filter_ in self.filters:
             data = filter_.filter(x=data, axis=self.axis)
-        return data
+
+        # Output
+        if data_deep is None:
+            return data
+        else:
+            data_deep.data = data
+            return data_deep

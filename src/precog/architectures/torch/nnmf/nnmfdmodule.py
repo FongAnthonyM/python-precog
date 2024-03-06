@@ -53,11 +53,14 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
         self,
         W: ModelBasis | Parameter | dict[str, Any] | None = None,
         H: ModelBasis | Parameter | dict[str, Any] | None = None,
+        conv_type: str | None = None,
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subarchitectures: dict[str, "BaseArchitecture"] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subarchitectures_kwargs: dict[str, dict[str, Any]] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -72,10 +75,13 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
             self.construct(
                 W=W,
                 H=H,
+                conv_type=conv_type,
                 bases=bases,
                 state_variables=state_variables,
+                subarchitectures=subarchitectures,
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
+                subarchitectures_kwargs=subarchitectures_kwargs,
                 **kwargs,
             )
 
@@ -89,8 +95,10 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subarchitectures: dict[str, "BaseArchitecture"] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subarchitectures_kwargs: dict[str, dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         # Construct Parent #
@@ -99,8 +107,10 @@ class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
             H=H,
             bases=bases,
             state_variables=state_variables,
+            subarchitectures=subarchitectures,
             create_defaults=create_defaults,
             bases_kwargs=bases_kwargs,
+            subarchitectures_kwargs=subarchitectures_kwargs,
             **kwargs,
         )
 

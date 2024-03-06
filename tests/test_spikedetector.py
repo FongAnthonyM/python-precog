@@ -22,6 +22,7 @@ import timeit
 # Third-Party Packages #
 import pytest
 import numpy as np
+import torch
 from ucsfbids import Subject
 
 # Local Packages #
@@ -99,8 +100,8 @@ class TestSpikeDetector(ClassTest):
         groups = []
         g_name = montage["name"][0].strip("1234567890")
         f_index = 0
-        for i, row in enumerate(montage):
-            if (new_name := row["name"].strip("1234567890")) != g_name:
+        for i, c_name in enumerate(montage["name"]):
+            if (new_name := c_name.strip("1234567890")) != g_name:
                 groups.append((g_name, montage[f_index:i]))
                 g_name = new_name
                 f_index = i
@@ -110,8 +111,8 @@ class TestSpikeDetector(ClassTest):
         remap_contacts = []
         cn_contacts = 0
         for (name, group) in groups:
-            type_ = group["group"][0]
-            c_names = group["names"]
+            type_ = tuple(group["group"])[0]
+            c_names = tuple(group["name"])
             n_contact = len(group)
             n_row, n_col = self.closest_square(n_contact) if 'grid' in type_ else (n_contact, 1)
 
@@ -159,6 +160,8 @@ class TestSpikeDetector(ClassTest):
         sample_rate = cdfs.data.sample_rates[1]
         montage = ieeg.load_electrodes()
         b_groups, remap = self.make_bipolar(montage)
+        new_map = np.zeros((276 if remap.shape[0] > 128 else 128, remap.shape[1]), dtype="f4")
+        new_map[:remap.shape[0], :remap.shape[1]] = remap
 
         # max_channels = np.array(cdfs.data.shapes).max(0)[1]
         # used_channels = len(montage["name"][:-4])
@@ -176,7 +179,22 @@ class TestSpikeDetector(ClassTest):
 
         submodels["first_model"] = NNMFDTorchModel(
             architecture={"W": NonNegativeBasis(size=w_size), "H": NonNegativeBasis(size=h_size)},
-            trainer={"state_variables": {"W_modifier", {}, "H_modifier", {}}},
+            trainer={"state_variables": {
+                "w_modifier": {
+                    "theta": 3600,
+                    "beta": 1.0,
+                    "penalty": 1.0,
+                    "pos": torch.zeros(size=w_size),
+                    "neg": torch.zeros(size=w_size),
+                },
+                "h_modifier": {
+                    "theta": 0,
+                    "beta": 1.0,
+                    "penalty": 1.0,  # Todo: Add this later
+                    "pos": torch.zeros(size=h_size),  # torch.zeros_like(theta, memory_format=torch.preserve_format)
+                    "neg": torch.zeros(size=h_size),
+                },
+            }},
         )
 
         model = EnsembleModel(submodels=submodels)
@@ -185,23 +203,26 @@ class TestSpikeDetector(ClassTest):
         spike_detector = SpikeDetector(
             model=model,
             streamer={"cdfs": cdfs},
-            remapper={"map_matrix": remap},
+            remapper={"map_matrix": new_map},
             preprocessing={"sample_rate": sample_rate},
             standardizer={"forget_factor": 10**-6, "burn_in": 10},  # Todo: Handle burn in (automatic)
         )
 
         # Select Time Range
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
-        stop = datetime.datetime(1970, 1, 7, 0, 9, 10, tzinfo=datetime.timezone.utc)
+        stop = datetime.datetime(1970, 1, 7, 1, 5, 10, tzinfo=datetime.timezone.utc)
 
         streamer = spike_detector.operations["streamer"]
         streamer.setup(start=start, stop=stop, step=10, approx=True, tails=True)
 
         # Evaluate
-        spike_detector.evaluate()
+        for i in range(10):
+            spike_detector.evaluate()
+
+        for i in range(500):
+            spike_detector.evaluate()
 
         assert True
-
 
 
 # Main #

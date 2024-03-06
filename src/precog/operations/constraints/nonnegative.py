@@ -14,6 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
+from copy import deepcopy
 from typing import Any
 
 # Third-Party Packages #
@@ -115,4 +116,15 @@ class NonNegative(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        return None if data is None else self.non_negative(data, **self.non_negative_kwargs)
+        if data is None:
+            return None
+        else:
+            nn_data = self.non_negative(data, **self.non_negative_kwargs)
+
+            # Output
+            if hasattr(data, "data"):
+                data_deep = data.dataless_proxy_leaf_copy()
+                data_deep.data = nn_data
+                return data_deep
+            else:
+                return nn_data

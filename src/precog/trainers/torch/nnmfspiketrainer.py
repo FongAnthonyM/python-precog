@@ -85,11 +85,13 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         W_refiner: BaseOperation | dict[str, Any] | None = None,
         H_refiner: BaseOperation | dict[str, Any] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subtrainers: dict[str, BaseTrainerOperation] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
+        operations: Mapping[str, BaseOperation] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -114,8 +116,10 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
                 H_refiner=H_refiner,
                 bases=bases,
                 state_variables=state_variables,
+                subtrainers=subtrainers,
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
+                subtrainers_kwargs=subtrainers_kwargs,
                 operations=operations,
                 init_io=init_io,
                 sets_up=sets_up,
@@ -132,11 +136,13 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         W_refiner: BaseOperation | dict[str, Any] | None = None,
         H_refiner: BaseOperation | dict[str, Any] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subtrainers: dict[str, BaseTrainerOperation] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
+        operations: Mapping[str, BaseOperation] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -204,8 +210,10 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         super().construct(
             bases=bases,
             state_variables=state_variables,
+            subtrainers=subtrainers,
             create_defaults=create_defaults,
             bases_kwargs=bases_kwargs,
+            subtrainers_kwargs=subtrainers_kwargs,
             operations=operations,
             init_io=init_io,
             sets_up=sets_up,
@@ -230,6 +238,8 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         
         if "modifier" not in self.W_modifier_kwargs:
             self.W_modifier_kwargs["modifier"] = AdaptiveMultiplicativeModifier(
+                bases=self.W_modifier_kwargs.get("bases", None),
+                state_variables=self.W_modifier_kwargs.get("state_variables", None),
                 module=self.W_architecture or self.architecture_type(),
                 updating_basis_name="W",
             )
@@ -241,6 +251,8 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
 
         if "modifier" not in self.H_modifier_kwargs:
             self.H_modifier_kwargs["modifier"] = AdaptiveMultiplicativeModifier(
+                bases=self.H_modifier_kwargs.get("bases", None),
+                state_variables=self.H_modifier_kwargs.get("state_variables", None),
                 module=self.H_architecture or self.architecture_type(),
                 updating_basis_name="H",
             )

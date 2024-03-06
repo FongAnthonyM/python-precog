@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import Any, Generator
 
 # Third-Party Packages #
 from torch.nn import Module
@@ -38,9 +38,11 @@ class ModuleWrapperArchitecture(BaseModuleArchitecture):
         module: Module | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subarchitectures: dict[str, "BaseArchitecture"] | None = None,
         *args: Any,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subarchitectures_kwargs: dict[str, dict[str, Any]] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -53,8 +55,10 @@ class ModuleWrapperArchitecture(BaseModuleArchitecture):
                 module=module,
                 bases=bases,
                 state_variables=state_variables,
+                subarchitectures=subarchitectures,
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
+                subarchitectures_kwargs=subarchitectures_kwargs,
                 **kwargs,
             )
 
@@ -65,9 +69,11 @@ class ModuleWrapperArchitecture(BaseModuleArchitecture):
         module: Module | None = None,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
+        subarchitectures: dict[str, "BaseArchitecture"] | None = None,
         *args: Any,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
+        subarchitectures_kwargs: dict[str, dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         # Assign New #
@@ -78,8 +84,10 @@ class ModuleWrapperArchitecture(BaseModuleArchitecture):
         super().construct(
                 bases=bases,
                 state_variables=state_variables,
+                subarchitectures=subarchitectures,
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
+                subarchitectures_kwargs=subarchitectures_kwargs,
                 **kwargs,
             )
 
@@ -92,14 +100,33 @@ class ModuleWrapperArchitecture(BaseModuleArchitecture):
         return self._bases
 
     # Subarchitecture
-    def get_subarchitectures(self) -> dict[str, BaseModuleArchitecture]:
-        subarchitectures = {}
-        for name, module in self.module.named_modules():
-            if isinstance(module, BaseModuleArchitecture):
-                subarchitectures[name] = module
-            else:
-                subarchitectures[name] = self.wrapper_architecture_type(module=module)
-        return subarchitectures
+    def iter_subarchitectures(
+        self,
+        memo: dict[Any, "BaseModuleArchitecture"] | None = None,
+        recursive: bool = False,
+        rebuild: bool = False,
+    ) -> Generator[tuple[str, "BaseModuleArchitecture"], None, None]:
+        if memo is None:
+            memo = {}
+
+        if self not in memo:
+            memo[self] = self
+
+        for name, module in self.module._modules.items():
+            if module is not None:
+                if module not in memo:
+                    if not isinstance(module, BaseModuleArchitecture):
+                        module_a = self.wrapper_architecture_type(module=module)
+                    else:
+                        module_a = module
+
+                    if recursive:
+                        module_a.get_subarchitectures(memo=memo, recursive=recursive, rebuild=rebuild)
+
+                    memo[module] = module_a
+                    yield name, module_a
+                else:
+                    yield name, memo[module]
 
 
 # Cyclic

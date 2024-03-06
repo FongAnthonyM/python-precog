@@ -204,14 +204,20 @@ class BaseModel(BaseObject):
     
     # Architecture
     def construct_default_architecture(self, **kwargs) -> None:
-        self.architecture = self.default_architecture[0](**(self.default_architecture[1] | kwargs))
+        if self.default_architecture:
+            self.architecture = self.default_architecture[0](**(self.default_architecture[1] | kwargs))
+        else:
+            self.architecture = None
 
     def build_architecture(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     # Trainer
     def construct_default_trainer(self, **kwargs) -> None:
-        self.trainer = self.default_trainer[0](**(self.default_trainer[1] | kwargs))
+        if self.default_trainer:
+            self.trainer = self.default_trainer[0](**(self.default_trainer[1] | kwargs))
+        else:
+            self.trainer = None
 
     def build_trainer(self, *args: Any, **kwargs: Any) -> None:
         pass

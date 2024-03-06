@@ -14,6 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
+from copy import deepcopy
 from typing import Any, Callable
 
 # Third-Party Packages #
@@ -132,7 +133,13 @@ class LineLength(BaseFeature):
                 self.window_type(self.window_len).reshape(-1, 1),
                 mode='same')
 
-            if self.squared_estimator:
-                data_ll = np.sqrt(data_ll)
+        if self.squared_estimator:
+            data_ll = np.sqrt(data_ll)
 
-        return data_ll
+        # Output
+        if hasattr(data, "data"):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = data_ll
+            return data_deep
+        else:
+            return data_ll

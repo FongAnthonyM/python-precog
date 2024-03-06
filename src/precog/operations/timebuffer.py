@@ -1,4 +1,4 @@
-""" remapper.py
+""" timebuffer.py
 
 """
 # Package Header #
@@ -13,11 +13,11 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from copy import deepcopy
 from typing import Any
 
 # Third-Party Packages #
 import numpy as np
+from proxyarrays import BaseProxyArray, BaseTimeAxis, BaseTimeSeries, TimeSeriesProxy
 
 # Local Packages #
 from .operation import BaseOperation
@@ -25,15 +25,18 @@ from .operation import BaseOperation
 
 # Definitions #
 # Classes #
-class Remapper(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", "map_matrix")
-    default_output_names: tuple[str, ...] = ("remapped_data",)
+class TimeBuffer(BaseOperation):
+    default_input_names: tuple[str, ...] = ("data", )
+    default_output_names: tuple[str, ...] = ("buffer_data",)
+
+    # New Attributes #
+    axis: int = 1
+    buffer: BaseProxyArray | None = None
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        map_matrix: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -42,9 +45,8 @@ class Remapper(BaseOperation):
         init: bool = True,
         **kwargs: Any,
     ) -> None:
-        # New Attributes #
-        self.axis: int = 1
-        self.map_matrix = None
+        # Attributes #
+        self.buffer = TimeSeriesProxy()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -52,8 +54,6 @@ class Remapper(BaseOperation):
         # Construct #
         if init:
             self.construct(
-                *args,
-                map_matrix=map_matrix,
                 axis=axis,
                 init_io=init_io,
                 sets_up=sets_up,
@@ -65,7 +65,6 @@ class Remapper(BaseOperation):
     # Constructors/Destructors
     def construct(
         self,
-        map_matrix: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
         init_io: bool = True,
@@ -76,7 +75,6 @@ class Remapper(BaseOperation):
         """Constructs this object.
 
         Args:
-            map_matrix: The remap matrix to apply.
             axis: The axis to remap along.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
@@ -84,27 +82,25 @@ class Remapper(BaseOperation):
             setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
-        if map_matrix is not None:
-            self.map_matrix = map_matrix
 
         if axis is not None:
             self.axis = axis
+            self.buffer.axis = axis
 
         # Construct Parent #
         super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
 
     # Setup
-    def setup(self, map_matrix: np.ndarray | None = None, *args: Any, **kwargs: Any) -> None:
+    def setup(self, *args: Any, **kwargs: Any) -> None:
         """A method for setting up the object before it runs operation."""
-        if map_matrix is not None:
-            self.map_matrix = map_matrix
+        pass
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, map_matrix: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: BaseTimeSeries | None = None, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
-            data: The array to remap.
+            data: The array to buffer.
             map_matrix: The remap matrix to apply.
             *args: The arguments for evaluating.
             **kwargs: The keyword arguments for evaluating.
@@ -112,17 +108,9 @@ class Remapper(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        # Input
-        if map_matrix is not None:
-            self.map_matrix = map_matrix
-
-        # Remap
-        remapped = np.moveaxis(np.moveaxis(data, self.axis, -1) @ self.map_matrix, -1, self.axis)
-
-        # Output
-        if hasattr(data, "data"):
-            data_deep = data.dataless_proxy_leaf_copy()
-            data_deep.data = remapped
-            return data_deep
+        if data is None:
+            return None
         else:
-            return remapped
+            # Todo: Change This later
+            return data if data.shape[0] == 10240 else None
+

@@ -25,6 +25,7 @@ from ..operations.streamers import CDFSStreamer
 from ..operations.remapper import Remapper
 from ..operations.preprocessingfilterbank import PreprocessingFilterBank
 from ..operations.standardizers import NNMFLineLengthStandardizer
+from ..operations.timebuffer import TimeBuffer
 from ..models import BaseModel
 from ..models.torch import NNMFDTorchModel
 
@@ -37,6 +38,7 @@ class SpikeDetector(OperationGroup):
     remapper_type = Remapper
     preprocessing_type = PreprocessingFilterBank
     standardizer_type = NNMFLineLengthStandardizer
+    time_buffer_type = TimeBuffer
     model_type = NNMFDTorchModel
     detector_type = None
 
@@ -51,6 +53,7 @@ class SpikeDetector(OperationGroup):
         remapper: BaseOperation | dict[str, Any] | None = None,
         preprocessing: BaseOperation | dict[str, Any] | None = None,
         standardizer: BaseOperation | dict[str, Any] | None = None,
+        time_buffer: BaseOperation | dict[str, Any] | None = None,
         detector: BaseOperation | dict[str, Any] | None = None,
         *args: Any,
         operations: Mapping[str, BaseOperation] | None = None,
@@ -71,6 +74,7 @@ class SpikeDetector(OperationGroup):
                 remapper=remapper,
                 preprocessing=preprocessing,
                 standardizer=standardizer,
+                time_buffer=time_buffer,
                 detector=detector,
                 operations=operations,
                 init_io=init_io,
@@ -88,6 +92,7 @@ class SpikeDetector(OperationGroup):
         remapper: BaseOperation | dict[str, Any] | None = None,
         preprocessing: BaseOperation | dict[str, Any] | None = None,
         standardizer: BaseOperation | dict[str, Any] | None = None,
+        time_buffer: BaseOperation | dict[str, Any] | None = None,
         detector: BaseOperation | dict[str, Any] | None = None,
         *args: Any,
         operations: Mapping[str, BaseOperation] | None = None,
@@ -132,7 +137,12 @@ class SpikeDetector(OperationGroup):
             self.operations["standardizer"] = standardizer
         elif isinstance(standardizer, dict):
             create_kwargs["standardizer_kwargs"] = standardizer
-            
+        
+        if isinstance(time_buffer, BaseOperation):
+            self.operations["time_buffer"] = time_buffer
+        elif isinstance(time_buffer, dict):
+            create_kwargs["time_buffer_kwargs"] = time_buffer
+        
         if isinstance(detector, BaseOperation):
             self.operations["detector"] = detector
         elif isinstance(detector, dict):
@@ -162,6 +172,7 @@ class SpikeDetector(OperationGroup):
         remapper_kwargs: dict[str, Any] | None = None,
         preprocessing_kwargs: dict[str, Any] | None = None,
         standardizer_kwargs: dict[str, Any] | None = None,
+        time_buffer_kwargs: dict[str, Any] | None = None,
         detector_kwargs: dict[str, Any] | None = None,
         *args: Any,
         **kwargs: Any,
@@ -171,6 +182,7 @@ class SpikeDetector(OperationGroup):
         self.operations["remapper"] = self.remapper_type(**(remapper_kwargs or {}))
         self.operations["preprocessing"] = self.preprocessing_type(**(preprocessing_kwargs or {}))
         self.operations["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
+        self.operations["time_buffer"] = self.time_buffer_type(**(time_buffer_kwargs or {}))
         self.operations["detector"] = self.create_detector(**(detector_kwargs or {}))
 
     # IO
@@ -180,13 +192,15 @@ class SpikeDetector(OperationGroup):
         remapper = self.operations["remapper"]
         preprocessing = self.operations["preprocessing"]
         standardizer = self.operations["standardizer"]
+        time_buffer = self.operations["time_buffer"]
         detector = self.operations["detector"]
 
         # Inner IO
         streamer.outputs["data"] = remapper.inputs["data"]
         remapper.outputs["remapped_data"] = preprocessing.inputs["data"]
         preprocessing.outputs["filter_data"] = standardizer.inputs["data"]
-        standardizer.outputs["features"] = detector.inputs["data"]
+        standardizer.outputs["features"] = time_buffer.inputs["data"]
+        time_buffer.outputs["buffer_data"] = detector.inputs["data"]
 
         # Set Output
         self.outputs = detector.outputs  # Make an indirect assignment

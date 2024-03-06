@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import ClassVar
+from typing import ClassVar, Any, Generator
 
 # Third-Party Packages #
 from torch.nn import Module
@@ -44,11 +44,30 @@ class ModuleArchitecture(Module, BaseModuleArchitecture):
         return self._bases
 
     # Subarchitecture
-    def get_subarchitectures(self) -> dict[str, BaseModuleArchitecture]:
-        subarchitectures = {}
-        for name, module in self.named_modules():
-            if isinstance(module, BaseModuleArchitecture):
-                subarchitectures[name] = module
-            else:
-                subarchitectures[name] = self.wrapper_architecture_type(module=module)
-        return subarchitectures
+    def iter_subarchitectures(
+        self,
+        memo: dict[Any, "BaseModuleArchitecture"] | None = None,
+        recursive: bool = False,
+        rebuild: bool = False,
+    ) -> Generator[tuple[str, "BaseModuleArchitecture"], None, None]:
+        if memo is None:
+            memo = {}
+
+        if self not in memo:
+            memo[self] = self
+
+        for name, module in self._modules.items():
+            if module is not None:
+                if module not in memo:
+                    if not isinstance(module, BaseModuleArchitecture):
+                        module_a = self.wrapper_architecture_type(module=module)
+                    else:
+                        module_a = module
+
+                    if recursive:
+                        module_a.get_subarchitectures(memo=memo, recursive=recursive, rebuild=rebuild)
+
+                    memo[module] = module_a
+                    yield name, module_a
+                else:
+                    yield name, memo[module]
